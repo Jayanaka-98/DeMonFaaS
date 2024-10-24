@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  fastapi_server_test:
+    container_name: fastapi_server_test
+    image: backend-fastapi_server:latest
+    build:
+      context: ./backend
+      args:
+        INSTALL_DEV: true
+    restart: always
+    volumes:
+      - ./backend:/code
+    ports:
+      - 8000:8000
+    # env_file: ".env"
+    environment:
+      - NODE=testing
+      - DATABASE_HOST=postgres_db_test
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - MEILI_HTTP_ADDR=meili_test:7700
+      - MEILI_IS_HTTPS_URL=false
+      - MEILI_MASTER_KEY=testKey
+    depends_on:
+      - database_test
+
+  database_test:
+    container_name: postgres_db_test
+    image: postgres:alpine
+    environment:
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+
+  meilisearch:
+    container_name: meili_test
+    image: getmeili/meilisearch:latest
+    environment:
+      - MEILI_MASTER_KEY=testKey
+      - MEILI_NO_ANALYTICS=true

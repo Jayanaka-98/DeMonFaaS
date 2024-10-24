@@ -1,0 +1,48 @@
+# Following Documentation for GitHub Action release-drafter, and other repos
+# Action: https://github.com/marketplace/actions/release-drafter
+# Other Repos: https://github.com/sanders41/meilisearch-fastapi/blob/main/.github/release-draft-template.yaml
+
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+exclude-labels:
+  - 'skip-changelog'
+  - 'release'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking-change'
+  minor:
+    labels:
+      - 'feature'
+  patch:
+    labels:
+      - 'documentation'
+      - 'bug-fix'
+      - 'refactor'
+      - 'internal'
+  default: patch
+categories:
+  - title: 'Breaking Changes'
+    labels:
+      - 'breaking-change'
+      - 'major'
+  - title: 'Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+  - title: 'Bug Fixes'
+    labels:
+      - 'bug-fix'
+  - title: 'Documentation'
+    labels:
+      - 'documentation'
+  - title: 'Internal'
+    labels:
+      - 'refactor'
+      - 'internal'
+change-template: '- $TITLE | PR #$NUMBER by @$AUTHOR'
+template: |
+  ## Changes
+
+  $CHANGES
