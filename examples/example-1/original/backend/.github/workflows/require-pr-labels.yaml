@@ -1,0 +1,20 @@
+# modified example from source
+# https://github.com/marketplace/actions/require-labels
+name: Pull Request Labels
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: mheap/github-action-required-labels@v5
+        with:
+          mode: minimum
+          count: 1
+          labels: "breaking-change, feature, bug-fix, documentation, enhancement, internal, refactor, release, skip-changelog"
+          add_comment: true
+          message: "This PR needs at least one of the following labels to be merged:\n{{ provided }}"
