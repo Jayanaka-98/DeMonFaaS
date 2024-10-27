@@ -1,15 +1,3 @@
-# FROM python:3.9-slim
-
-# WORKDIR /home/app
-
-# COPY handler.py .
-# COPY requirements.txt .
-
-# RUN pip install -r requirements.txt
-
-# ENV fprocess="python3 handler.py"
-# CMD ["fwatchdog"]
-
 ARG PYTHON_VERSION=3
 FROM --platform=${TARGETPLATFORM:-linux/amd64} ghcr.io/openfaas/classic-watchdog:0.3.1 AS watchdog
 FROM --platform=${TARGETPLATFORM:-linux/amd64} python:${PYTHON_VERSION}-alpine

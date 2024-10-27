@@ -72,13 +72,3 @@ async def update_user(db: DBDep, id: PositiveInt, data: UserUpdate):
     updated_user = await users.update(db, key=id, obj_in=data)
 
     return updated_user
-
-
-# async def handle(id):
-#     """Get user by ID."""
-#     db = get_db_session()
-#     db_user = await users.get(db, key=id)
-#     if not db_user:
-#         raise KeyNotFoundException(User, id)
-
-#     return db_user

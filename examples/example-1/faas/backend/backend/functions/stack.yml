@@ -6,4 +6,5 @@ functions:
   users:
     lang: python3
     handler: ./users
-    image: users:latest
+    dockerfile: ./users/Dockerfile
+    image: stoneann5490/users:latest
