@@ -1,0 +1,9 @@
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+
+functions:
+  fast-api:
+    lang: dockerfile               # Use a custom Dockerfile
+    handler: .                  # Directory of dockerfile
+    image: stoneann5490/fast-api:latest
