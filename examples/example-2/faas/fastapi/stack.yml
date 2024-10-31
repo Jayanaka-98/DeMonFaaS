@@ -6,4 +6,13 @@ functions:
   root:
     lang: python3-http
     handler: ./root
-    image: stoneann5490/root:latest
+    image: stoneann5490/example-2-root:latest
+  user2:
+    lang: python3-http
+    handler: ./user
+    image: stoneann5490/example-2-user2:latest
+
+configuration:
+  copy:
+    - ./app
+    - ./data
