@@ -1,5 +1,5 @@
 def handle(event, context):
-    return {"message": "Fast API in Python"}
+    return {"body": "Fast API in Python"}
 
 # def handle_post(event, context):
 #     return {

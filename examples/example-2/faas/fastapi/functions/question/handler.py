@@ -12,4 +12,7 @@ def handle(event, context):
     if not question:
         raise HTTPException(status_code=400, detail="Error")
 
-    return question
+    if 'body' not in question:
+        return {"body":question}
+    else:
+        return question
