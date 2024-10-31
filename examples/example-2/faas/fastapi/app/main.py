@@ -10,21 +10,7 @@ app = FastAPI()
 
 @app.get("/")
 def root():
-    print("hello")
     return {"message": "Fast API in Python"}
-
-
-def run() -> None:  # pragma: no cover
-    """Run the server."""
-    print("here")
-    uvicorn.run(
-        "app.main:app", host="127.0.0.1", port=8000, reload=True
-    )
-
-
-if __name__ == "__main__":
-    print("here")
-    waitress.serve(app, host="127.0.0.1", port=8000)
 
 # @app.get("/user")
 # def read_user():
