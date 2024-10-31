@@ -1,6 +1,6 @@
 import os, sys
 sys.path.append(os.path.join(os.path.dirname(__file__)))
-os.chdir(sys.path)
+os.chdir(os.path.join(os.path.dirname(__file__)))
 
 from app.api import api
 

@@ -5,12 +5,12 @@ provider:
 functions:
   root:
     lang: python3-http
-    handler: ./root
+    handler: ./functions/root
     image: stoneann5490/example-2-root:latest
-  user2:
+  user:
     lang: python3-http
-    handler: ./user
-    image: stoneann5490/example-2-user2:latest
+    handler: ./functions/user
+    image: stoneann5490/example-2-user:latest
 
 configuration:
   copy:
