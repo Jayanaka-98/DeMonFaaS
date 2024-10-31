@@ -11,8 +11,13 @@ functions:
     lang: python3-http
     handler: ./functions/user
     image: stoneann5490/example-2-user:latest
+  question:
+    lang: python3-http
+    handler: ./functions/question
+    image: stoneann5490/example-2-question:latest
 
 configuration:
   copy:
     - ./app
     - ./data
+    - ./requirements.txt
