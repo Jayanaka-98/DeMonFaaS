@@ -1,0 +1,18 @@
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+
+functions:
+  app:
+    lang: dockerfile
+    handler: .
+    image: stoneann/example-3-app:latest
+  # tokens:
+  #   lang: python3-http
+  #   handler: ./functions/tokens
+  #   image: stoneann5490/example-3-tokens:latest
+
+configuration:
+  copy:
+    - ./app
+    - ./requirements.txt

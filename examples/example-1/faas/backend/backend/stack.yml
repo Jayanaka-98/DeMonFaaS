@@ -10,6 +10,20 @@ functions:
     environment:
       DATABASE_HOST: postgres_db
       MEILI_HTTP_ADDR: meili:7700
+  users:
+    lang: dockerfile               # Use a custom Dockerfile
+    handler: .                  # Directory of dockerfile
+    image: stoneann5490/app:latest
+    environment:
+      DATABASE_HOST: postgres_db
+      MEILI_HTTP_ADDR: meili:7700
+  courses:
+    lang: dockerfile               # Use a custom Dockerfile
+    handler: .                  # Directory of dockerfile
+    image: stoneann5490/app:latest
+    environment:
+      DATABASE_HOST: postgres_db
+      MEILI_HTTP_ADDR: meili:7700
 
 # configuration:
 #   copy:

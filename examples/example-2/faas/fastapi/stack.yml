@@ -1,0 +1,23 @@
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+
+functions:
+  root:
+    lang: python3-http
+    handler: ./functions/root
+    image: stoneann5490/example-2-root:latest
+  user:
+    lang: python3-http
+    handler: ./functions/user
+    image: stoneann5490/example-2-user:latest
+  question:
+    lang: python3-http
+    handler: ./functions/question
+    image: stoneann5490/example-2-question:latest
+
+configuration:
+  copy:
+    - ./app
+    - ./data
+    - ./requirements.txt
