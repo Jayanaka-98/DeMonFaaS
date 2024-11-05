@@ -8,3 +8,7 @@ functions:
     lang: dockerfile
     handler: .
     image: stoneann5490/example-4-app:latest
+  temp:
+    lang: dockerfile
+    handler: .
+    image: stoneann5490/example-4-app:latest
