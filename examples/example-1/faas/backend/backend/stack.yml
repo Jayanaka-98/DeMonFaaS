@@ -1,0 +1,21 @@
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+
+functions:
+  app:
+    lang: dockerfile               # Use a custom Dockerfile
+    handler: .                  # Directory of dockerfile
+    image: stoneann5490/app:latest
+    environment:
+      DATABASE_HOST: postgres_db
+      MEILI_HTTP_ADDR: meili:7700
+
+# configuration:
+#   copy:
+#     - ./app
+#     - ./poetry.lock
+#     - ./prestart.sh
+#     - ./start.sh
+#     - ./pyproject.toml
+#     - ./alembic.ini

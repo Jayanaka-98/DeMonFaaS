@@ -1,0 +1,14 @@
+provider:
+ name: openfaas
+ gateway: http://127.0.0.1:8080
+
+
+functions:
+  app:
+    lang: dockerfile
+    handler: .
+    image: stoneann5490/example-4-app:latest
+  temp:
+    lang: dockerfile
+    handler: .
+    image: stoneann5490/example-4-app:latest

@@ -1,0 +1,15 @@
+apiVersion: openfaas.com/v1
+kind: FunctionIngress
+metadata:
+  name: app
+  namespace: openfaas
+spec:
+  domain: "env.example.com"   # Replace with your domain
+  function: "app"             # Name of the deployed function
+  ingressType: "nginx"        # Ingress controller type, e.g., nginx
+  path: "/v1/" # Optionally set a path for the domain i.e. nodeinfo.myfaas.club/v1/profiles/
+  # tls:
+  #   enabled: true             # Enable TLS for HTTPS
+  #   issuerRef:
+  #     name: "letsencrypt-prod"  # Specify the cert-manager issuer
+  #     kind: "Issuer"           # Use "Issuer" or "ClusterIssuer" for cert-manager

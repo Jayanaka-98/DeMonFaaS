@@ -1,2 +1,0 @@
-fastapi>=3.8
-sqlalchemy=2.0.28
