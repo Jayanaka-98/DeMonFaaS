@@ -7,13 +7,18 @@ from demonfaas.func_extractor import ExtractFunctionToFile
 
 app = FastAPI()
 
+def DeMonFaaS(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
 class Item(BaseModel):
     name: str = Field(..., min_length=3, max_length=50)
     description: Optional[str] = Field(default=None, max_length=300)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-@ExtractFunctionToFile
+@DeMonFaaS
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI in serverless!"}
