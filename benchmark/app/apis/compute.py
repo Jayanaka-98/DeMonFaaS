@@ -2,7 +2,8 @@ from flask import Blueprint
 
 compute_api = Blueprint('compute_api', __name__)
 
-@compute_api.route(f'/computeapi/<limit>')
+# optimal input is limit = 10000000
+@compute_api.route(f'/computeapi/sieve/<limit>')
 def sieve_of_eratosthenes(limit):
     # Create a boolean array "prime[0..limit]" and initialize all entries as True.
     # A value in prime[i] will finally be False if i is not a prime, else True.
