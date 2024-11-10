@@ -11,7 +11,7 @@ Follow the [instructions](https://docs.google.com/document/d/1q5SlrphUP3UjC4WZjo
 
 ## Step 2: Test Deployment Locally
 Run the following curl to ensure the application has been deployed correctly. Output received should be "Hello from app!" \
-```curl http://127.0.0.1:8080/function/benchmark-app```
+```curl http://127.0.0.1:8080/function/benchmark-app/quickapi/test1```
 
 ## Step 3: Install Jmeter
 If you haven't run the tests before, run\
@@ -19,6 +19,10 @@ If you haven't run the tests before, run\
  ```brew install jmeter ```
 
 ## Step 4: Run Jmeter
-2. ```whereis jmeter```\
-3. ```open <path to jmeter>```\
+1. ```whereis jmeter```\
+2. ```open <path to jmeter>```\
 
+## Step 5: Run benchmark
+1. Open benchmark. Any file ending in jmx is a Jmeter benchmark you can open. 
+2. Click the green play button and wait until execution finishes. Note: may take 15 minutes
+3. Open the response time graph that is nested inside the benchmark. 
