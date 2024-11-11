@@ -25,4 +25,4 @@ If you haven't run the tests before, run\
 ## Step 5: Run benchmark
 1. Open benchmark. Any file ending in jmx is a Jmeter benchmark you can open. 
 2. Click the green play button and wait until execution finishes. Note: may take 15 minutes
-3. Open the response time graph that is nested inside the benchmark. 
+3. Open the aggregate results to see the latencies 
