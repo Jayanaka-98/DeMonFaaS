@@ -13,7 +13,7 @@ def get_db_connection():
     return conn
 
 @data_api.route('/dataapi/read')
-def test1():
+def test_read():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('SELECT * FROM read_heavy;')
@@ -28,10 +28,10 @@ def test_write():
     cur = conn.cursor()
     random_num = random.randint(1, 1000000)
     changes = 0
-    for i in range(5000):
+    for i in range(2000):
         cur.execute(f"INSERT INTO write_heavy (write_id, write_name) VALUES ({random_num}, '{i}')")
         changes += 1
-    for i in range(5000):
+    for i in range(2000):
         cur.execute(f"DELETE FROM write_heavy WHERE write_id={random_num} and write_name='{i}'")
         changes += 1
     cur.close()

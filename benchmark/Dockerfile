@@ -8,6 +8,10 @@ RUN chmod +x /usr/bin/fwatchdog
 COPY ./requirements.txt /app/requirements.txt
 
 WORKDIR /app
+RUN apk update && \
+    apk add postgresql-dev && \
+    pip install psycopg2
+
 RUN pip3 install -r requirements.txt
 ENV PYTHONIOENCODING=UTF-8
 
