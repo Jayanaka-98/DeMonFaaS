@@ -9,6 +9,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client" // go framework for building controllers
 )
 
+// Define the ApiTransformation resource
+type ApiTransformation struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              ApiTransformationSpec `json:"spec,omitempty"`
+}
+
+type ApiTransformationSpec struct {
+	SourceApi string `json:"sourceApi"`
+	TargetApi string `json:"targetApi"`
+}
+
 type ApiTransformationReconciler struct {
 	client.Client // lets controller interact with kubernetes resources
 	Scheme *runtime.Scheme // manages object types - enables kubernetes to recognize and handle custom resources
@@ -68,10 +80,13 @@ func forward(sourceApi, targetApi string) error {
 }
 
 func main() {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(AddToScheme(scheme)) // Register the ApiTransformation resource scheme
+
 	// Set up controller manager which manages the lifecycle of the controller.
 	// Connect Manager to kubernetes cluster.
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: runtime.NewScheme(),
+		Scheme: scheme,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to start manager: %v", err))
@@ -90,5 +105,28 @@ func main() {
 	// Starts the controller and starts reconciling events
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		panic(fmt.Sprintf("unable to run manager: %v", err))
+	}
+}
+
+// AddToScheme registers ApiTransformation with the runtime scheme
+func AddToScheme(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(
+		runtime.NewSchemeBuilder(
+			func(s *runtime.Scheme) error {
+				s.AddKnownTypeWithName(ApiTransformationGVK(), &ApiTransformation{})
+				return nil
+			},
+		).Build(),
+	)
+	metav1.AddToGroupVersion(scheme, ApiTransformationGVK().GroupVersion())
+	return nil
+}
+
+// ApiTransformationGVK returns the GroupVersionKind for ApiTransformation
+func ApiTransformationGVK() metav1.GroupVersionKind {
+	return metav1.GroupVersionKind{
+		Group:   "myapi.example.com",
+		Version: "v1",
+		Kind:    "ApiTransformation",
 	}
 }
