@@ -26,6 +26,59 @@ type ApiTransformationReconciler struct {
 	Scheme *runtime.Scheme // manages object types - enables kubernetes to recognize and handle custom resources
 }
 
+// Structure for the response from Prometheus query
+type PrometheusResponse struct {
+	Status string `json:"status"`
+	Data   struct {
+		Result []struct {
+			Metric map[string]string `json:"metric"`
+			Value  []interface{}     `json:"value"`
+		} `json:"result"`
+	} `json:"data"`
+}
+
+// Function to query Prometheus API
+func queryPrometheus(query string) (*PrometheusResponse, error) {
+	// Define Prometheus query URL (modify with your Prometheus service)
+	prometheusURL := "http://prometheus-k8s.default.svc.cluster.local:9090/api/v1/query"
+
+	// Encode the query parameter
+	params := url.Values{}
+	params.Add("query", query)
+
+	// Make the HTTP request to Prometheus
+	resp, err := http.Get(prometheusURL + "?" + params.Encode())
+	if err != nil {
+		return nil, fmt.Errorf("error querying Prometheus: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
+
+	// Check if the request was successful (status code 200)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Prometheus query failed with status: %d", resp.StatusCode)
+	}
+
+	// Parse the JSON response into the PrometheusResponse struct
+	var prometheusResponse PrometheusResponse
+	err = json.Unmarshal(body, &prometheusResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling JSON response: %v", err)
+	}
+
+	// Check if we received any results
+	if len(prometheusResponse.Data.Result) == 0 {
+		return nil, fmt.Errorf("no results found for the query")
+	}
+
+	return &prometheusResponse, nil
+}
+
 // Implemented inside ApiTransformationReconciler - like Scope Operator :: in C++
 func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// Fetch the ApiTransformation resource
