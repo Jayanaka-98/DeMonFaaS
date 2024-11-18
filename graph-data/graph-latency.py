@@ -50,6 +50,28 @@ def avg_latency_bar_graph(data, output_file):
     # Save graph
     plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
 
+def avg_latency_line_graph(data, output_file):
+
+    apis = list(set([dict["Label"].split()[0] for dict in data]))
+    for api in apis:
+        x = []
+        y = []
+        if api != "TOTAL":
+            for dict in data:
+                if dict["Label"].split()[0] == api:
+                    x.append(int(dict["Label"].split()[-1]))
+                    y.append(int(dict["Average"]))
+            plt.plot(x, y, label=api)
+
+    # Adding labels and title
+    plt.xlabel('Number of Concurrent Threads')
+    plt.ylabel('Average Time (ms)')
+    plt.title('Benchmark Average Latency')
+    plt.legend()
+
+    # Save graph
+    plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
+
 
 if __name__ == "__main__":
     # Check if the file path is provided as an argument
@@ -59,4 +81,5 @@ if __name__ == "__main__":
         file_path = sys.argv[1]
         output_file_path = sys.argv[2]
         data = read_csv(file_path)
-        avg_latency_bar_graph(data, output_file_path)
+        # avg_latency_bar_graph(data, output_file_path)
+        avg_latency_line_graph(data, output_file_path)
