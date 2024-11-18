@@ -1,0 +1,9 @@
+# Creates a new resource
+# like creating a object of a class in C++
+apiVersion: myapi.example.com/v1
+kind: ApiTransformation
+metadata:
+  name: demonfaas-transformation
+spec:
+  sourceApi: "http://localhost:8080"
+  targetApi: "http://localhost:8080"
