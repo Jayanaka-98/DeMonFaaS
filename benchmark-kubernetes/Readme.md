@@ -1,7 +1,9 @@
 # Deploying to Kind Kubernetes Distro
 
 I have created 3 bash scripts that will help locally deploy the application to kind, a kubernetes distro. See comments inside bash scripts to understand more of how they work. Be sure to login to docker before running the scripts. You can do so in the terminal by the following command. \
-```docker login```
+```docker login``` \
+
+## IMPORTANT: You must go into deployment.yaml and controller-deployment-yml and change the image form stoneann5490 to your docker username. \
 
 ## kube_create.sh
 This bash script can be used to create a kubernetes cluster and deploy the sample app onto it. It takes in one argument, your docker username. See example below. \
