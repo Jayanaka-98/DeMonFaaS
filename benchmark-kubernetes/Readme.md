@@ -11,6 +11,9 @@ This bash script can be used to create a kubernetes cluster and deploy the sampl
 Run the following commands. You should see both the benchmark app as well as a postgres db in both. The first gets the deployments and the second gets the services. \
 ```kubectl get pods``` \
 ```kubectl get svc``` \ 
+You can also try sending a request to the app to verify its successfully deployed. Please run the following two lines of code in 2 separate terminal windows. The curl should return "Hello from app!" \
+```kubectl port-forward svc/benchmark-app-service 8080:80``` \
+```curl http://localhost:8080/``` \
 
 ### Testing
 Here are some helpful commands to help test the code if there is a bug. \
@@ -23,3 +26,18 @@ This bash script can be used to delete the current cluster. It is helpful in res
 ## kube_update.sh
 If you make any updates to the source app, dockerfile, or deployment.yaml then you can run this bash script. If you changed any other files, it would be best to just delete the cluster via the kube_delete script and recreate it.
 
+# Running the Benchmark
+
+## Step 1: Install Jmeter
+If you haven't run the tests before, run\
+#### MacOS
+ ```brew install jmeter ```
+
+## Step 2: Run Jmeter
+1. ```whereis jmeter```\
+2. ```open <path to jmeter>```\
+
+## Step 3: Run benchmark
+1. Open benchmark. Any file ending in jmx is a Jmeter benchmark you can open. 
+2. Click the green play button and wait until execution finishes. Note: may take 15 minutes
+3. Open the aggregate results to see the latencies 
