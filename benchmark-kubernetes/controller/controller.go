@@ -2,12 +2,19 @@ package main
 
 import (
 	"context" // Manages lifecycle of API requests
+	"encoding/json"
 	"fmt" // string formatting
+	"io/ioutil"
 	"net/http" // standard http library
-	"k8s.io/apimachinery/pkg/runtime" // represents kubernetes object model schema
-	ctrl "sigs.k8s.io/controller-runtime" // go framework for building controllers
+	"net/url"
+
+	"k8s.io/apimachinery/pkg/runtime"           // represents kubernetes object model schema
+	ctrl "sigs.k8s.io/controller-runtime"       // go framework for building controllers
 	"sigs.k8s.io/controller-runtime/pkg/client" // go framework for building controllers
+	"sigs.k8s.io/controller-runtime/pkg/log"    // logger
 )
+
+var logger = log.Log.WithName("demonfaas-controller")
 
 // Define the ApiTransformation resource
 type ApiTransformation struct {
@@ -22,8 +29,8 @@ type ApiTransformationSpec struct {
 }
 
 type ApiTransformationReconciler struct {
-	client.Client // lets controller interact with kubernetes resources
-	Scheme *runtime.Scheme // manages object types - enables kubernetes to recognize and handle custom resources
+	client.Client                 // lets controller interact with kubernetes resources
+	Scheme        *runtime.Scheme // manages object types - enables kubernetes to recognize and handle custom resources
 }
 
 // Structure for the response from Prometheus query
@@ -81,6 +88,7 @@ func queryPrometheus(query string) (*PrometheusResponse, error) {
 
 // Implemented inside ApiTransformationReconciler - like Scope Operator :: in C++
 func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger.Info("Handling the request") // Example of structured
 	// Fetch the ApiTransformation resource
 	// ApiTransformation resource is used to define rules for transforming API calls. It specifies...
 	// - source API endpoint (where it came from)
@@ -133,11 +141,13 @@ func forward(sourceApi, targetApi string) error {
 }
 
 func main() {
+	logger.Info("Starting the controller") // Example of structured
 	scheme := runtime.NewScheme()
 	utilruntime.Must(AddToScheme(scheme)) // Register the ApiTransformation resource scheme
 
 	// Set up controller manager which manages the lifecycle of the controller.
 	// Connect Manager to kubernetes cluster.
+	logger.Info("Starting the controller 2") // Example of structured
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 	})
@@ -147,6 +157,7 @@ func main() {
 
 	// Add controller to manager.
 	// Registers the reconciler with the manager.
+	logger.Info("Starting the controller 3") // Example of structured
 	if err := (&ApiTransformationReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -156,6 +167,7 @@ func main() {
 
 	// Start manager
 	// Starts the controller and starts reconciling events
+	logger.Info("Starting the controller 4") // Example of structured
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		panic(fmt.Sprintf("unable to run manager: %v", err))
 	}

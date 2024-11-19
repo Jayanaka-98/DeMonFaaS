@@ -17,7 +17,9 @@ kubectl create configmap postgres-init-sql --from-file=init.sql -o yaml > postgr
 
 kubectl create configmap postgres-insert-sql --from-file=insert.sql -o yaml > postgres-insert-sql.yaml
 
+cd controller/
 ./register_crd.sh $1
+cd ..
 
 kubectl apply -f postgres-init-sql.yaml
 kubectl apply -f postgres-insert-sql.yaml

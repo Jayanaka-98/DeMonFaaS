@@ -14,8 +14,8 @@ data:
     FROM number_gen;
 kind: ConfigMap
 metadata:
-  creationTimestamp: "2024-11-18T07:14:28Z"
+  creationTimestamp: "2024-11-19T20:58:46Z"
   name: postgres-insert-sql
   namespace: default
-  resourceVersion: "980"
-  uid: 141d425e-c0ab-4ac7-9fd4-841d674bb649
+  resourceVersion: "1039"
+  uid: a0e284cf-99a9-4324-ac90-36d49c3050ef
