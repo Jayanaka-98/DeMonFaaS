@@ -8,6 +8,7 @@ import (
 	"net/http" // standard http library
 	"net/url"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"           // represents kubernetes object model schema
 	ctrl "sigs.k8s.io/controller-runtime"       // go framework for building controllers
 	"sigs.k8s.io/controller-runtime/pkg/client" // go framework for building controllers
@@ -17,6 +18,9 @@ import (
 var logger = log.Log.WithName("demonfaas-controller")
 
 // Define the ApiTransformation resource
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 type ApiTransformation struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -94,24 +98,24 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// - source API endpoint (where it came from)
 	// - target API endpoint (where it is going)
 	// - transformation logic (details on how to modify the request)
-	var transformation ApiTransformation
-	if err := r.Get(ctx, req.NamespacedName, &transformation); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
+	// var transformation ApiTransformation
+	// if err := r.Get(ctx, req.NamespacedName, &transformation); err != nil {
+	// 	return ctrl.Result{}, client.IgnoreNotFound(err)
+	// }
 
-	// Check if target API has changed
-	oldTargetApi, exists := r.getCachedTargetAPI(req.NamespacedName)
-	if exists && oldTargetApi != transformation.Spec.TargetApi {
-		// Handle logic for target API change, e.g., log the change or reset resources
-		fmt.Printf("Target API changed: %s -> %s\n", oldTargetApi, transformation.Spec.TargetApi)
-		r.updateCachedTargetAPI(req.NamespacedName, transformation.Spec.TargetApi)
-	}
+	// // Check if target API has changed
+	// oldTargetApi, exists := r.getCachedTargetAPI(req.NamespacedName)
+	// if exists && oldTargetApi != transformation.Spec.TargetApi {
+	// 	// Handle logic for target API change, e.g., log the change or reset resources
+	// 	fmt.Printf("Target API changed: %s -> %s\n", oldTargetApi, transformation.Spec.TargetApi)
+	// 	r.updateCachedTargetAPI(req.NamespacedName, transformation.Spec.TargetApi)
+	// }
 
-	// Directly forward the request from source to target
-	err := forward(transformation.Spec.SourceApi, transformation.Spec.TargetApi)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	// // Directly forward the request from source to target
+	// err := forward(transformation.Spec.SourceApi, transformation.Spec.TargetApi)
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
 
 	return ctrl.Result{}, nil
 }
@@ -143,7 +147,7 @@ func forward(sourceApi, targetApi string) error {
 func main() {
 	logger.Info("Starting the controller") // Example of structured
 	scheme := runtime.NewScheme()
-	utilruntime.Must(AddToScheme(scheme)) // Register the ApiTransformation resource scheme
+	// utilruntime.Must(AddToScheme(scheme)) // Register the ApiTransformation resource scheme
 
 	// Set up controller manager which manages the lifecycle of the controller.
 	// Connect Manager to kubernetes cluster.
@@ -158,12 +162,12 @@ func main() {
 	// Add controller to manager.
 	// Registers the reconciler with the manager.
 	logger.Info("Starting the controller 3") // Example of structured
-	if err := (&ApiTransformationReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		panic(fmt.Sprintf("unable to create controller: %v", err))
-	}
+	// if err := (&ApiTransformationReconciler{
+	// 	Client: mgr.GetClient(),
+	// 	Scheme: mgr.GetScheme(),
+	// }).SetupWithManager(mgr); err != nil {
+	// 	panic(fmt.Sprintf("unable to create controller: %v", err))
+	// }
 
 	// Start manager
 	// Starts the controller and starts reconciling events
@@ -173,25 +177,25 @@ func main() {
 	}
 }
 
-// AddToScheme registers ApiTransformation with the runtime scheme
-func AddToScheme(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(
-		runtime.NewSchemeBuilder(
-			func(s *runtime.Scheme) error {
-				s.AddKnownTypeWithName(ApiTransformationGVK(), &ApiTransformation{})
-				return nil
-			},
-		).Build(),
-	)
-	metav1.AddToGroupVersion(scheme, ApiTransformationGVK().GroupVersion())
-	return nil
-}
+// // ApiTransformationGVK returns the GroupVersionKind for ApiTransformation
+// func ApiTransformationGVK() metav1.GroupVersionKind {
+// 	return metav1.GroupVersionKind{
+// 		Group:   "myapi.example.com",
+// 		Version: "v1",
+// 		Kind:    "ApiTransformation",
+// 	}
+// }
 
-// ApiTransformationGVK returns the GroupVersionKind for ApiTransformation
-func ApiTransformationGVK() metav1.GroupVersionKind {
-	return metav1.GroupVersionKind{
-		Group:   "myapi.example.com",
-		Version: "v1",
-		Kind:    "ApiTransformation",
-	}
-}
+// // AddToScheme registers ApiTransformation with the runtime scheme
+// func AddToScheme(scheme *runtime.Scheme) error {
+// 	scheme.AddKnownTypes(
+// 		runtime.NewSchemeBuilder(
+// 			func(s *runtime.Scheme) error {
+// 				s.AddKnownTypeWithName(ApiTransformationGVK(), &ApiTransformation{})
+// 				return nil
+// 			},
+// 		).Build(),
+// 	)
+// 	metav1.AddToGroupVersion(scheme, ApiTransformationGVK().GroupVersion())
+// 	return nil
+// }

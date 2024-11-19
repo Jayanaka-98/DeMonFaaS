@@ -10,9 +10,9 @@ kubectl apply -f api-transformation-definition.yml
 kubectl apply -f api-transformation.yml
 
 # Build the controller image that monitors that resource
-docker build -t $1/demonfaas-controller:latest .
-docker push $1/demonfaas-controller:latest
+docker build -t $1/demonfaas-controller:v1 .
+docker push $1/demonfaas-controller:v1
 
-kind load docker-image $1/demonfaas-controller:latest --name demonfaas-cluster
+kind load docker-image $1/demonfaas-controller:v1 --name demonfaas-cluster
 
 kubectl apply -f controller-deployment.yml
