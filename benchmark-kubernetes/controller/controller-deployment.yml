@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: demonfaas-controller
-        image: stoneann5490/demonfaas-controller:v1
+        image: jayanaka98/demonfaas-controller:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 80
