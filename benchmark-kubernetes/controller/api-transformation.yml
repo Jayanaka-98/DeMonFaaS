@@ -6,4 +6,9 @@ metadata:
   name: demonfaas-transformation
 spec:
   sourceApi: "http://localhost:8080"
-  targetApi: "http://localhost:8080"
+  serverlessApi: "http://127.0.0.1:8080"
+  serverfulApi: "http://wsgi-service:8000"
+  requestThreshold: 100
+  latencyThreshold: 0.5
+  evaluationInterval: 30
+  cooldownPeriod: 300

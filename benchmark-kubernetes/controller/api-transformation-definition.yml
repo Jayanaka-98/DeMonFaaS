@@ -22,8 +22,42 @@ spec:
         properties:
           spec:
             type: object
+            required: ["sourceApi", "serverlessApi", "serverfulApi"]
             properties:
               sourceApi:
                 type: string
-              targetApi:
+              serverlessApi:
                 type: string
+              serverfulApi:
+                type: string
+              requestThreshold:
+                type: integer
+                default: 100
+              latencyThreshold:
+                type: number
+                default: 0.5
+              evaluationInterval:
+                type: integer
+                default: 30
+              cooldownPeriod:
+                type: integer
+                default: 300
+          status:
+            type: object
+            properties:
+              currentTarget:
+                type: string
+              lastUpdateTime:
+                type: string
+                format: date-time
+              currentMetrics:
+                type: object
+                properties:
+                  requestRate:
+                    type: number
+                  avgLatency:
+                    type: number
+                  errorRate:
+                    type: number
+                  cpuUtilization:
+                    type: number

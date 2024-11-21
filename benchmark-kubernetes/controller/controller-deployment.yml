@@ -13,23 +13,7 @@ spec:
         app: demonfaas-controller
     spec:
       containers:
-      - name: demonfaas-controller
-        image: jayanaka98/demonfaas-controller:v1
-        imagePullPolicy: Always
+      - name: controller
+        image: demonfaas-controller:latest
         ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: demonfaas-controller-service
-spec:
-  selector:
-    app: demonfaas-controller
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8000
-  type: ClusterIP
-
----
+        - containerPort: 8080

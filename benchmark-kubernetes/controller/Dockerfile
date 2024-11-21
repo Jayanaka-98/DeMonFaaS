@@ -6,7 +6,9 @@ WORKDIR /app
 
 # Copy the Go module files first to leverage Docker caching
 COPY go.mod go.sum ./
-RUN go mod tidy && go mod download
+# RUN go mod tidy && go mod download
+# RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
+# RUN controller-gen object paths=./...
 
 # Copy the rest of the application source code
 COPY . .
