@@ -10,13 +10,13 @@ kubectl apply -f api-transformation-definition.yml
 kubectl apply -f api-transformation.yml
 
 # Build the controller image that monitors that resource
-# go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
+go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
 go mod tidy
-controller-gen object paths=./...
+~/go/bin/controller-gen object paths=./...
 
-docker build -t $1/demonfaas-controller:v1 .
-docker push $1/demonfaas-controller:v1
+docker build -t $1/demonfaas-controller:latest .
+docker push $1/demonfaas-controller:latest
 
-kind load docker-image $1/demonfaas-controller:v1 --name demonfaas-cluster
+kind load docker-image $1/demonfaas-controller:latest --name demonfaas-cluster
 
 kubectl apply -f controller-deployment.yml
