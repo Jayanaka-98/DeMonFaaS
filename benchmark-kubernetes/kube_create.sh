@@ -36,6 +36,21 @@ helm install kind-prometheus prometheus-community/kube-prometheus-stack \
   --set prometheus-node-exporter.service.nodePort=32001 \
   --set prometheus-node-exporter.service.type=NodePort
 
+helm repo add openfaas https://openfaas.github.io/faas-netes/ 
+helm repo update
+# Creates the namespaces
+kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
+# Create pods, deployments, and servicds
+helm install openfaas openfaas/openfaas --namespace openfaas --set gateway.externalURL=http://127.0.0.1:8081
+# saves password and logs in
+PASSWORD=$(kubectl -n openfaas get secret basic-auth -o jsonpath="{.data.basic-auth-password}" | base64 --decode)
+echo "OpenFaaS admin password: $PASSWORD"
+echo -n $PASSWORD | faas-cli login -s
+
+# deploys to openfaas
+faas-cli up
+
 kubectl apply -f postgres-init-sql.yaml
 kubectl apply -f postgres-insert-sql.yaml
 kubectl apply -f deployment.yaml
+kubectl create namespace openfaas

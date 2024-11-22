@@ -14,7 +14,7 @@ Run the following commands. You should see both the benchmark app as well as a p
 ```kubectl get pods``` \
 ```kubectl get svc``` \ 
 You can also try sending a request to the app to verify its successfully deployed. Please run the following two lines of code in 2 separate terminal windows. The curl should return "Hello from app!" \
-```kubectl port-forward svc/benchmark-app-service 8080:80``` \
+```kubectl port-forward svc/benchmark-app-service 8000:80``` \
 ```curl http://localhost:8080/``` \
 
 ### Testing
