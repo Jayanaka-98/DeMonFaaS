@@ -17,7 +17,7 @@ RUN go mod download && go mod verify
 COPY . .
 
 # Build the application with CGO enabled for certain dependencies
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /api-routing-controller \
+RUN CGO_ENABLED=1 go build -o /api-routing-controller \
     -ldflags="-w -s" \
     -a -installsuffix cgo .
 
