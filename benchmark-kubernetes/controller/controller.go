@@ -219,6 +219,7 @@ func (r *ApiTransformationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
 	logger.Info("Reconciling ApiTransformation", "namespacedName", req.NamespacedName)
 
 	var transformation ApiTransformation
@@ -328,8 +329,16 @@ func queryPrometheusMetric(query string) (float64, error) {
 }
 
 func main() {
+	// Set up the logger (this is the default logger)
+	// log.SetLogger(controller_runtime.NewLogger())
+
 	scheme := runtime.NewScheme()
 	_ = AddToScheme(scheme)
+	// metav1.AddMetaToScheme(scheme)
+	scheme.AddKnownTypes(GroupVersion,
+		&ApiTransformation{}, // Add your custom ApiTransformation type here
+	)
+	metav1.AddToGroupVersion(scheme, GroupVersion)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
@@ -341,7 +350,7 @@ func main() {
 	// Start HTTP server for request routing
 	go func() {
 		http.HandleFunc("/", ProxyHandler)
-		if err := http.ListenAndServe(":8080", nil); err != nil {
+		if err := http.ListenAndServe(":9000", nil); err != nil {
 			panic(fmt.Sprintf("failed to start HTTP server: %v", err))
 		}
 	}()
