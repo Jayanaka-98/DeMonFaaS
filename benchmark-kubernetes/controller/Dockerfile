@@ -1,32 +1,53 @@
-# Stage 1: Build the Go binary
-FROM golang:1.23 AS builder
+# Build stage
+FROM golang:1.22-alpine AS builder
 
-# Set the working directory
+# Install necessary build tools
+RUN apk add --no-cache git gcc musl-dev
+
+# Set working directory
 WORKDIR /app
 
-# Copy the Go module files first to leverage Docker caching
+# Copy go mod and sum files
 COPY go.mod go.sum ./
-# RUN go mod tidy && go mod download
-# RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
-# RUN controller-gen object paths=./...
 
-# Copy the rest of the application source code
+# Download dependencies
+RUN go mod download && go mod verify
+
+# Copy source code
 COPY . .
 
-# Build the Go application
-RUN CGO_ENABLED=0 GOOS=linux go build -o controller .
+# Build the application with CGO enabled for certain dependencies
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /api-routing-controller \
+    -ldflags="-w -s" \
+    -a -installsuffix cgo .
 
-# Stage 2: Create the final runtime image
-FROM gcr.io/distroless/static:nonroot
+# Final stage
+FROM alpine:3.19
 
-# Set the working directory inside the container
-WORKDIR /
+# Install necessary runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata
 
-# Copy the Go binary from the builder stage
-COPY --from=builder /app/controller .
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Specify a non-root user for security
-USER nonroot:nonroot
+# Set working directory
+WORKDIR /app
 
-# Set the entry point for the container
-ENTRYPOINT ["/controller"]
+# Copy the binary from builder
+COPY --from=builder /api-routing-controller .
+
+# Set ownership
+RUN chown -R appuser:appgroup /app
+
+# Create necessary directories for controller-runtime
+RUN mkdir -p /tmp/k8s-webhook-server/serving-certs && \
+    chown -R appuser:appgroup /tmp/k8s-webhook-server
+
+# Switch to non-root user
+USER appuser
+
+# Expose port for HTTP server
+EXPOSE 8080
+
+# Run the application
+ENTRYPOINT ["./api-routing-controller"]

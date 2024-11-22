@@ -1,6 +1,8 @@
 module demonfaas-controller
 
-go 1.23.3
+go 1.22.0
+
+toolchain go1.23.3
 
 require (
 	k8s.io/apimachinery v0.31.2
