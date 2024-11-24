@@ -1,5 +1,14 @@
 echo "Starting cleanup..."
 
+if [ -f port_forward.pid ]; then
+    PORT_FORWARD_PID=$(cat port_forward.pid)
+    kill $PORT_FORWARD_PID
+    echo "Port-forwarding process (PID $PORT_FORWARD_PID) stopped."
+    rm port_forward.pid
+else
+    echo "Port-forward PID file not found."
+fi
+
 # Delete OpenFaaS namespace and resources
 echo "Cleaning up OpenFaaS..."
 helm uninstall openfaas --namespace openfaas 2>/dev/null || true
