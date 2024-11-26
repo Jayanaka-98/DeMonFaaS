@@ -9,6 +9,11 @@ kubectl apply -f api-transformation-definition.yml
 # Adds a ApiTransformation to the Kubernetes cluster
 kubectl apply -f api-transformation.yml
 
+# Deploy role necessary to watch api transformation
+kubectl apply -f controller-service-account.yml
+kubectl apply -f controller-role.yml
+kubectl apply -f controller-role-binding.yml
+
 # Build the controller image that monitors that resource
 go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
 go mod tidy

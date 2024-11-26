@@ -17,6 +17,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
@@ -221,6 +222,7 @@ func (r *ApiTransformationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling ApiTransformation", "namespacedName", req.NamespacedName)
+	fmt.Println("Reconcile")
 
 	var transformation ApiTransformation
 	if err := r.Get(ctx, req.NamespacedName, &transformation); err != nil {
@@ -331,12 +333,15 @@ func queryPrometheusMetric(query string) (float64, error) {
 func main() {
 	// Set up the logger (this is the default logger)
 	// log.SetLogger(controller_runtime.NewLogger())
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	fmt.Println("Starting the controller")
 
 	scheme := runtime.NewScheme()
 	_ = AddToScheme(scheme)
 	// metav1.AddMetaToScheme(scheme)
 	scheme.AddKnownTypes(GroupVersion,
 		&ApiTransformation{}, // Add your custom ApiTransformation type here
+		&ApiTransformationList{},
 	)
 	metav1.AddToGroupVersion(scheme, GroupVersion)
 

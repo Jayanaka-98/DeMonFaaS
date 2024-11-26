@@ -12,6 +12,7 @@ spec:
       labels:
         app: demonfaas-controller
     spec:
+      serviceAccountName: apitransformation-controller
       containers:
       - name: controller
         image: jayanaka98/demonfaas-controller:latest
