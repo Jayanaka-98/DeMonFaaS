@@ -105,7 +105,18 @@ func generateDockerfile(cmd *cobra.Command, args []string) error {
 	// make more proper using string formatting
 	// parse each line up to first word and create a blacklist for kwargs that should not be added
 	new_file := strings.Replace(dockerFileTemplate, "@@@", payload, -1)
-	fmt.Println(new_file)
+
+	writer := bufio.NewWriter(file)
+
+	_, err = writer.WriteString(new_file)
+	if err != nil {
+		return fmt.Errorf("invalid file name")
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		return fmt.Errorf("Error flushing to file")
+	}
 
 	return nil
 }
