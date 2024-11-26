@@ -6,3 +6,6 @@ rules:
 - apiGroups: ["myapi.example.com"]
   resources: ["apitransformations"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["myapi.example.com"]
+  resources: ["apitransformations/status"]  # Grant permission for the status subresource
+  verbs: ["get", "update", "patch"]
