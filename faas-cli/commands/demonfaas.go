@@ -1,14 +1,10 @@
 package commands
 
 import (
-<<<<<<< Updated upstream
-	"fmt"
-=======
 	"bufio"
 	"fmt"
 	"os"
 	"strings"
->>>>>>> Stashed changes
 
 	"github.com/spf13/cobra"
 )
@@ -33,10 +29,6 @@ func d_assert(predicate bool) {
 
 var (
 	dockerFile string
-<<<<<<< Updated upstream
-=======
-	// dockerhubUsername string
->>>>>>> Stashed changes
 )
 
 func init() {
@@ -47,14 +39,10 @@ func init() {
 	// src, dockerfile, deployment.yaml (already delpoyed stuff to k8)
 
 	demonfaasCmd.Flags().StringVar(&dockerFile, "dockerfile", "", "original input dockerfile")
-<<<<<<< Updated upstream
-=======
 	// demonfaasCmd.Flags().StringVar(&dockerhubUsername, "username", "", "dockerhub username")
 
 	up, _, _ := faasCmd.Find([]string{"up"})
 	demonfaasCmd.Flags().AddFlagSet(up.Flags())
->>>>>>> Stashed changes
-
 	faasCmd.AddCommand(demonfaasCmd)
 }
 
@@ -69,11 +57,6 @@ var demonfaasCmd = &cobra.Command{
 }
 
 func preRun(cmd *cobra.Command, args []string) error {
-<<<<<<< Updated upstream
-	d_print("pre run")
-
-	d_print(dockerFile)
-=======
 	d_print("pre run demonfass with dockerfile", dockerFile)
 	return nil
 }
@@ -128,18 +111,15 @@ func generateDockerfile(cmd *cobra.Command, args []string) error {
 }
 
 func generateStackYaml(cmd *cobra.Command, args []string) error {
->>>>>>> Stashed changes
 	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {
 	d_print("run")
-<<<<<<< Updated upstream
-=======
+
 	generateDockerfile(cmd, args)
 	preRunUp(cmd, args)
 	upHandler(cmd, args)
->>>>>>> Stashed changes
 	return nil
 }
 
