@@ -27,7 +27,8 @@ Here are some helpful commands to help test the code if there is a bug. \
 
 
 ## kube_delete.sh
-This bash script can be used to delete the current cluster. It is helpful in restarting the cluster if things get too messy.
+This bash script can be used to delete the current cluster. It is helpful in restarting the cluster if things get too messy. If you are getting no space left on device errors, please run \
+```docker system prune```
 
 ## kube_update.sh
 If you make any updates to the source app, dockerfile, or deployment.yaml then you can run this bash script. If you changed any other files, it would be best to just delete the cluster via the kube_delete script and recreate it.
