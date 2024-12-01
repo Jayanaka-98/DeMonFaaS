@@ -5,9 +5,9 @@ kind: ApiTransformation
 metadata:
   name: demonfaas-transformation
 spec:
-  sourceApi: "http://localhost:8080"
+  sourceApi: "http://localhost:8000"
   serverlessApi: "http://127.0.0.1:8080"
-  serverfulApi: "http://wsgi-service:8000"
+  serverfulApi: "http://localhost:8000"
   requestThreshold: 100
   latencyThreshold: 0.5
   evaluationInterval: 30

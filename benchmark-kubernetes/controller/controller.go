@@ -222,7 +222,6 @@ func (r *ApiTransformationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling ApiTransformation", "namespacedName", req.NamespacedName)
-	fmt.Println("Reconcile")
 
 	var transformation ApiTransformation
 	if err := r.Get(ctx, req.NamespacedName, &transformation); err != nil {
@@ -253,7 +252,8 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		LatencyAvg:    metrics.AvgLatency,
 	})
 
-	if err := r.Status().Update(ctx, &transformation); err != nil {
+	// fmt.Println("\n\nTRANSFORMATION: ", transformation)
+	if err := r.Update(ctx, &transformation); err != nil {
 		logger.Error(err, "Failed to update ApiTransformation status")
 		return ctrl.Result{}, err
 	}
