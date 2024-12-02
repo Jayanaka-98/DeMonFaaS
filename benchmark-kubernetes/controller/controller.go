@@ -332,8 +332,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		logger.Info(err)
-		http.Error(w, "Proxy error", http.StatusBadGateway)
+		http.Error(w, "Proxy error "+err.Error(), http.StatusBadGateway)
 	}
 	proxy.Transport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
