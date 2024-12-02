@@ -305,9 +305,9 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Determine target URL based on routing decision
 	if routingDecision.UseServerless {
-		targetUrl = serverlessApiBase
+		targetUrl = serverlessApiBase + sourceApi
 	} else {
-		targetUrl = serverfulApiBase
+		targetUrl = serverfulApiBase + sourceApi
 	}
 
 	// Create target URL
@@ -317,7 +317,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// resp, err := http.Get("https://localhost:8000")
+	// resp, err := http.Get(targetUrl)
 	// if err != nil {
 	// 	fmt.Printf("Error connecting to target: %v", err)
 	// }
@@ -338,11 +338,11 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		Proxy: http.ProxyFromEnvironment,
 	}
 	// Update request headers
-	// r.URL.Host = target.Host
-	// r.URL.Scheme = target.Scheme
+	r.URL.Host = target.Host
+	r.URL.Scheme = target.Scheme
 	// r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
 	// r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.UseServerless))
-	// r.Host = target.Host
+	r.Host = target.Host
 
 	// Forward the request
 	proxy.ServeHTTP(w, r)
