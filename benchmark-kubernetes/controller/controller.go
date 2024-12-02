@@ -22,8 +22,10 @@ import (
 )
 
 var (
-	logger       = log.Log.WithName("api-routing-controller")
-	routingCache = &sync.Map{}
+	logger            = log.Log.WithName("api-routing-controller")
+	routingCache      = &sync.Map{}
+	serverlessApiBase = ""
+	serverfulApiBase  = ""
 )
 
 // GroupVersion is group version used to register these objects
@@ -228,35 +230,54 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	metrics, err := r.getMetrics(ctx, transformation.Spec.SourceApi)
-	if err != nil {
-		logger.Error(err, "Failed to get metrics")
-		return ctrl.Result{}, err
-	}
+	serverfulApiBase = transformation.Spec.ServerfulApi
+	serverlessApiBase = transformation.Spec.ServerlessApi
 
-	useServerless := r.shouldUseServerless(metrics, &transformation.Spec)
+	// Iterate through the sync.Map
+	routingCache.Range(func(key, value interface{}) bool {
+		fmt.Printf("Key: %v, Value: %v\n", key, value)
 
-	// Update status
-	transformation.Status.CurrentMetrics = *metrics
-	transformation.Status.LastUpdateTime = metav1.Now()
-	transformation.Status.CurrentTarget = transformation.Spec.ServerfulApi
-	if useServerless {
-		transformation.Status.CurrentTarget = transformation.Spec.ServerlessApi
-	}
+		route := key.(string) // Type assertion for key
+		// ip := value.(string)  // Type assertion for value
 
-	// Store decision in cache
-	routingCache.Store(transformation.Spec.SourceApi, &RoutingDecision{
-		UseServerless: useServerless,
-		LastUpdated:   time.Now(),
-		RequestCount:  int64(metrics.RequestRate),
-		LatencyAvg:    metrics.AvgLatency,
+		metrics, err := r.getMetrics(ctx, transformation.Spec.SourceApi+route)
+		if err != nil {
+			logger.Error(err, "Failed to get metrics")
+		}
+
+		useServerless := r.shouldUseServerless(metrics, &transformation.Spec)
+
+		routingCache.Store(route, &RoutingDecision{
+			UseServerless: useServerless,
+			LastUpdated:   time.Now(),
+			RequestCount:  int64(metrics.RequestRate),
+			LatencyAvg:    metrics.AvgLatency,
+		})
+
+		return true // Returning true to continue iteration
 	})
 
+	// Update status
+	// transformation.Status.CurrentMetrics = *metrics
+	// transformation.Status.LastUpdateTime = metav1.Now()
+	// transformation.Status.CurrentTarget = transformation.Spec.ServerfulApi
+	// if useServerless {
+	// 	transformation.Status.CurrentTarget = transformation.Spec.ServerlessApi
+	// }
+
+	// Store decision in cache
+	// routingCache.Store(transformation.Spec.SourceApi, &RoutingDecision{
+	// 	UseServerless: useServerless,
+	// 	LastUpdated:   time.Now(),
+	// 	RequestCount:  int64(metrics.RequestRate),
+	// 	LatencyAvg:    metrics.AvgLatency,
+	// })
+
 	// fmt.Println("\n\nTRANSFORMATION: ", transformation)
-	if err := r.Update(ctx, &transformation); err != nil {
-		logger.Error(err, "Failed to update ApiTransformation status")
-		return ctrl.Result{}, err
-	}
+	// if err := r.Update(ctx, &transformation); err != nil {
+	// 	logger.Error(err, "Failed to update ApiTransformation status")
+	// 	return ctrl.Result{}, err
+	// }
 
 	return ctrl.Result{
 		RequeueAfter: time.Duration(transformation.Spec.EvaluationInterval) * time.Second,
@@ -269,8 +290,14 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Get routing decision from cache
 	decision, ok := routingCache.Load(sourceApi)
 	if !ok {
-		http.Error(w, "No routing decision found", http.StatusInternalServerError)
-		return
+		var newRouteDecision = &RoutingDecision{
+			UseServerless: false,
+			LastUpdated:   time.Now(),
+			RequestCount:  1,
+			LatencyAvg:    0,
+		}
+		routingCache.Store(sourceApi, newRouteDecision)
+		decision = newRouteDecision
 	}
 
 	routingDecision := decision.(*RoutingDecision)
@@ -278,9 +305,9 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Determine target URL based on routing decision
 	if routingDecision.UseServerless {
-		targetUrl = "http://openfaas-gateway:8080" + sourceApi
+		targetUrl = serverlessApiBase
 	} else {
-		targetUrl = "http://wsgi-service:8000" + sourceApi
+		targetUrl = serverfulApiBase
 	}
 
 	// Create target URL
@@ -290,15 +317,33 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// resp, err := http.Get("https://localhost:8000")
+	// if err != nil {
+	// 	fmt.Printf("Error connecting to target: %v", err)
+	// }
+	// defer resp.Body.Close()
+	// logger.Info("Target responded with status: %v", resp.Status)
+
 	// Create reverse proxy
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		logger.Info("Response from target: %v", resp.Status)
+		return nil
+	}
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		logger.Info(err)
+		http.Error(w, "Proxy error", http.StatusBadGateway)
+	}
+	proxy.Transport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+	}
 	// Update request headers
-	r.URL.Host = target.Host
-	r.URL.Scheme = target.Scheme
-	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-	r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.UseServerless))
-	r.Host = target.Host
+	// r.URL.Host = target.Host
+	// r.URL.Scheme = target.Scheme
+	// r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
+	// r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.UseServerless))
+	// r.Host = target.Host
 
 	// Forward the request
 	proxy.ServeHTTP(w, r)

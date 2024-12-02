@@ -5,7 +5,7 @@ kind: ApiTransformation
 metadata:
   name: demonfaas-transformation
 spec:
-  sourceApi: "http://localhost:8000"
+  sourceApi: "http://localhost:9000"
   serverlessApi: "http://127.0.0.1:8080"
   serverfulApi: "http://localhost:8000"
   requestThreshold: 100
