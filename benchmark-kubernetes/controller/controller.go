@@ -317,11 +317,11 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// resp, err := http.Get(targetUrl)
-	// if err != nil {
-	// 	fmt.Printf("Error connecting to target: %v", err)
-	// }
-	// defer resp.Body.Close()
+	resp, err := http.Get(serverfulApiBase)
+	if err != nil {
+		fmt.Printf("Error connecting to target: %v", err)
+	}
+	defer resp.Body.Close()
 	// logger.Info("Target responded with status: %v", resp.Status)
 
 	// Create reverse proxy
@@ -340,8 +340,8 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Update request headers
 	r.URL.Host = target.Host
 	r.URL.Scheme = target.Scheme
-	// r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-	// r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.UseServerless))
+	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
+	r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.UseServerless))
 	r.Host = target.Host
 
 	// Forward the request
@@ -349,12 +349,15 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func queryPrometheusMetric(query string) (float64, error) {
-	prometheusURL := "http://prometheus-k8s.monitoring.svc.cluster.local:9090"
+	fmt.Println("CALLING PROMETHEUS")
+	prometheusURL := "http://prometheus-operated.monitoring.svc.cluster.local:9090"
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, url.QueryEscape(query)))
 	if err != nil {
+		fmt.Println("ERROR IN PROMETHEUS")
 		return 0, err
 	}
 	defer resp.Body.Close()
+	fmt.Println("SUCCESSFULLY CALLED PROMETHEUS")
 
 	var result PrometheusResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
