@@ -3,13 +3,9 @@ if [ -z "$1" ]; then
     exit 1  # Exit with a non-zero code to indicate an error
 fi
 
-docker build -t $1/demonfaas-benchmark-app:latest -f Dockerfile.kubernetes .
-
-docker push $1/demonfaas-benchmark-app:latest
-
 kind create cluster --config cluster-config.yml
 
-kind load docker-image $1/demonfaas-benchmark-app:latest --name demonfaas-cluster
+./rebuild_deploy.sh $1
 
 kubectl config use-context kind-demonfaas-cluster
 
