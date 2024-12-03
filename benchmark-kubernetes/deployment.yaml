@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: benchmark-app
-        image: jayanaka98/demonfaas-benchmark-app:latest
+        image: jayanaka98/demonfaas-benchmark-app-kubernetes:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
