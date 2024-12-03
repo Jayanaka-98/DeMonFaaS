@@ -6,7 +6,7 @@ metadata:
   name: demonfaas-transformation
 spec:
   sourceApi: "http://localhost:9000"
-  serverlessApi: "http://127.0.0.1:8080"
+  serverlessApi: "http://gateway.openfaas.svc.cluster.local:8080"
   serverfulApi: "http://benchmark-app-service.default.svc.cluster.local:8000"
   requestThreshold: 100
   latencyThreshold: 0.5

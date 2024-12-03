@@ -342,15 +342,12 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func queryPrometheusMetric(query string) (float64, error) {
-	fmt.Println("CALLING PROMETHEUS")
 	prometheusURL := "http://prometheus-operated.monitoring.svc.cluster.local:9090"
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, url.QueryEscape(query)))
 	if err != nil {
-		fmt.Println("ERROR IN PROMETHEUS")
 		return 0, err
 	}
 	defer resp.Body.Close()
-	fmt.Println("SUCCESSFULLY CALLED PROMETHEUS")
 
 	var result PrometheusResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
