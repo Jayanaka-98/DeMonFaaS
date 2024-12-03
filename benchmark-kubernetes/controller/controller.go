@@ -317,18 +317,11 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Get(serverfulApiBase)
-	if err != nil {
-		fmt.Printf("Error connecting to target: %v", err)
-	}
-	defer resp.Body.Close()
-	// logger.Info("Target responded with status: %v", resp.Status)
-
 	// Create reverse proxy
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		logger.Info("Response from target: %v", resp.Status)
+		fmt.Println(resp)
 		return nil
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {

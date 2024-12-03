@@ -3,7 +3,7 @@ if [ -z "$1" ]; then
     exit 1  # Exit with a non-zero code to indicate an error
 fi
 
-docker build -t $1/demonfaas-benchmark-app:latest .
+docker build -t $1/demonfaas-benchmark-app:latest -f Dockerfile.kubernetes .
 
 docker push $1/demonfaas-benchmark-app:latest
 
