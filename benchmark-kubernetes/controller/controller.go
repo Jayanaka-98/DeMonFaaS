@@ -26,6 +26,8 @@ var (
 	routingCache      = &sync.Map{}
 	serverlessApiBase = ""
 	serverfulApiBase  = ""
+	countServerless   = 0
+	countServerful    = 0
 )
 
 // GroupVersion is group version used to register these objects
@@ -235,8 +237,6 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Iterate through the sync.Map
 	routingCache.Range(func(key, value interface{}) bool {
-		fmt.Printf("Key: %v, Value: %v\n", key, value)
-
 		route := key.(string) // Type assertion for key
 		// ip := value.(string)  // Type assertion for value
 
@@ -305,9 +305,13 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Determine target URL based on routing decision
 	if routingDecision.UseServerless {
-		targetUrl = serverlessApiBase + sourceApi
+		targetUrl = serverlessApiBase
+		countServerless += 1
+		fmt.Printf("*** Serverless Count: %d", countServerless)
 	} else {
-		targetUrl = serverfulApiBase + sourceApi
+		targetUrl = serverfulApiBase
+		countServerful += 1
+		fmt.Printf("*** Serverful Count: %d", countServerful)
 	}
 
 	// Create target URL
@@ -327,9 +331,8 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		http.Error(w, "Proxy error "+err.Error(), http.StatusBadGateway)
 	}
-	proxy.Transport = &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-	}
+	proxy.Transport = nil
+
 	// Update request headers
 	r.URL.Host = target.Host
 	r.URL.Scheme = target.Scheme
