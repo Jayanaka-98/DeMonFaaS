@@ -1,0 +1,25 @@
+# Creates a new resource
+# like creating a object of a class in C++
+apiVersion: myapi.example.com/v1
+kind: ApiTransformation
+metadata:
+  name: demonfaas-transformation
+spec:
+  sourceApi: "http://localhost:9000"
+  serverlessApi: "http://gateway.openfaas.svc.cluster.local:8080/function/"
+  serverfulApi: "http://benchmark-app-service.default.svc.cluster.local:8000"
+  requestThreshold: 100
+  latencyThreshold: 0.5
+  evaluationInterval: 30
+  cooldownPeriod: 300
+  routes:
+    - route: "/computeapi/sieve/3000000"
+      function: "compute"
+    - route: "/dataapi/read"
+      function: "data"
+    - route: "/dataapi/write"
+      function: "data"
+    - route: "/quickapi/test1"
+      function: "quick"
+    - route: "/"
+      function: "benchmark-app"

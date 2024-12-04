@@ -1,0 +1,22 @@
+provider:
+ name: openfaas
+ gateway: http://127.0.0.1:8080
+
+functions:
+  benchmark-app:
+    lang: dockerfile
+    handler: ./benchmark-app
+    image: jayanaka98/demonfaas-benchmark-app:latest
+    route:
+  compute:
+    lang: dockerfile
+    handler: ./benchmark-app-compute
+    image: jayanaka98/demonfaas-benchmark-app:latest
+  data:
+    lang: dockerfile
+    handler: ./benchmark-app-data
+    image: jayanaka98/demonfaas-benchmark-app:latest
+  quick:
+    lang: dockerfile
+    handler: ./benchmark-app-quick
+    image: jayanaka98/demonfaas-benchmark-app:latest
