@@ -2,6 +2,14 @@ import csv
 import sys
 import matplotlib.pyplot as plt
 
+
+color_map = {
+    "Read": "BLUE",
+    "Write": "RED",
+    "Compute": "PURPLE",
+    "Quick": "PINK"
+}
+
 def read_csv(file_path):
     data = []
     try:
@@ -50,8 +58,16 @@ def avg_latency_bar_graph(data, output_file):
     # Save graph
     plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
 
-def avg_latency_line_graph(data, output_file):
+def box_plot():
+    data = read_csv("data/all-kubernetes-30sec.csv")
+    min_val = int(data[0]["Min"])
+    median_val = int(data[0]["Median"])
+    max_val = int(data[0]["Max"] ) 
+    fig, ax = plt.subplots()
+    ax.boxplot([min_val, median_val, max_val],vert=False, patch_artist=True)
+    plt.show()
 
+def plot_line(data, line_style):
     apis = list(set([dict["Label"].split()[0] for dict in data]))
     for api in apis:
         x = []
@@ -60,9 +76,29 @@ def avg_latency_line_graph(data, output_file):
             for dict in data:
                 if dict["Label"].split()[0] == api:
                     x.append(int(dict["Label"].split()[-1]))
-                    y.append(int(dict["Average"]))
-            plt.plot(x, y, label=api)
+                    y.append(int(dict["Min"]))
+            plt.plot(x, y, label=api, linestyle=line_style, color=color_map[api])
 
+def avg_latency_line_graph(data, output_file):
+
+    plot_line(data, '-')
+
+    # Adding labels and title
+    plt.xlabel('Number of Concurrent Threads')
+    plt.ylabel('Average Time (ms)')
+    plt.title('Benchmark Average Latency')
+    plt.legend()
+
+    # Save graph
+    plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
+
+
+def avg_latency_compare(output_file):
+    data1 = read_csv("data/all-openfaas-30sec.csv")
+    data2 = read_csv("data/all-kubernetes-30sec.csv")
+
+    plot_line(data1, '-.')
+    plot_line(data2, '-')
     # Adding labels and title
     plt.xlabel('Number of Concurrent Threads')
     plt.ylabel('Average Time (ms)')
@@ -82,4 +118,6 @@ if __name__ == "__main__":
         output_file_path = sys.argv[2]
         data = read_csv(file_path)
         # avg_latency_bar_graph(data, output_file_path)
-        avg_latency_line_graph(data, output_file_path)
+        # avg_latency_line_graph(data, output_file_path)
+        # avg_latency_compare(output_file_path)
+        box_plot()
