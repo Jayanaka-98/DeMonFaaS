@@ -317,18 +317,18 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Determine target URL based on routing decision
 	// if routingDecision.UseServerless {
-	val, ok := routingMap.Load(sourceApi)
-	if !ok {
-		http.Error(w, "Invalid target URL", http.StatusInternalServerError)
-		return
-	}
-	targetUrl = serverlessApiBase + val.(string)
-	countServerless += 1
-	fmt.Printf("*** Serverless Count: %d", countServerless)
+	// val, ok := routingMap.Load(sourceApi)
+	// if !ok {
+	// 	http.Error(w, "Invalid target URL", http.StatusInternalServerError)
+	// 	return
+	// }
+	// targetUrl = serverlessApiBase + val.(string)
+	// countServerless += 1
+	// fmt.Printf("*** Serverless Count: %d", countServerless)
 	// } else {
-	// 	targetUrl = serverfulApiBase
-	// 	countServerful += 1
-	// 	fmt.Printf("*** Serverful Count: %d", countServerful)
+	targetUrl = serverfulApiBase
+	countServerful += 1
+	fmt.Printf("*** Serverful Count: %d", countServerful)
 	// }
 
 	// Create target URL

@@ -6,17 +6,17 @@ functions:
   benchmark-app:
     lang: dockerfile
     handler: ./benchmark-app
-    image: jayanaka98/demonfaas-benchmark-app:latest
+    image: stoneann5490/demonfaas-benchmark-app:latest
     route:
   compute:
     lang: dockerfile
     handler: ./benchmark-app-compute
-    image: jayanaka98/demonfaas-benchmark-app-compute:latest
+    image: stoneann5490/demonfaas-benchmark-app-compute:latest
   data:
     lang: dockerfile
     handler: ./benchmark-app-data
-    image: jayanaka98/demonfaas-benchmark-app-data:latest
+    image: stoneann5490/demonfaas-benchmark-app-data:latest
   quick:
     lang: dockerfile
     handler: ./benchmark-app-quick
-    image: jayanaka98/demonfaas-benchmark-app-quick:latest
+    image: stoneann5490/demonfaas-benchmark-app-quick:latest

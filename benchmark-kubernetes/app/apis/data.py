@@ -5,7 +5,7 @@ import random
 data_api = Blueprint('data_api', __name__)
 
 def get_db_connection():
-    conn = psycopg2.connect(host='postgres-db-service',
+    conn = psycopg2.connect(host='postgres-db-service.default.svc.cluster.local',
                             database='db',
                             user='postgres',
                             password='postgres_pass',

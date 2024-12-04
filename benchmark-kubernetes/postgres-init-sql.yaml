@@ -13,8 +13,8 @@ data:
     );
 kind: ConfigMap
 metadata:
-  creationTimestamp: "2024-11-22T18:15:02Z"
+  creationTimestamp: "2024-12-04T20:23:50Z"
   name: postgres-init-sql
   namespace: default
-  resourceVersion: "1263"
-  uid: f24e33b0-b1e6-4baf-9a8b-991d39c342a7
+  resourceVersion: "1109"
+  uid: e57436f5-39db-4e64-802b-a22714c9a7ef

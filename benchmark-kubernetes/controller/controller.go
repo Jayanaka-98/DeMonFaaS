@@ -204,6 +204,7 @@ func (r *ApiTransformationReconciler) getMetrics(ctx context.Context, apiPath st
 
 func (r *ApiTransformationReconciler) shouldUseServerless(metrics *Metrics, spec *ApiTransformationSpec) bool {
 	// Decision logic based on multiple factors
+	fmt.Printf("\nREQUEST RATE: %d; AVG LATENCY: %d; CPU UTILIZATION: %d\n", metrics.RequestRate, metrics.AvgLatency, metrics.CPUUtilization)
 	if metrics.RequestRate > float64(spec.RequestThreshold) {
 		return true
 	}
@@ -304,15 +305,15 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	var targetUrl string
 
 	// Determine target URL based on routing decision
-	if routingDecision.UseServerless {
-		targetUrl = serverlessApiBase
-		countServerless += 1
-		fmt.Printf("*** Serverless Count: %d", countServerless)
-	} else {
-		targetUrl = serverfulApiBase
-		countServerful += 1
-		fmt.Printf("*** Serverful Count: %d", countServerful)
-	}
+	// if routingDecision.UseServerless {
+	targetUrl = serverlessApiBase
+	countServerless += 1
+	fmt.Printf("*** Serverless Count: %d", countServerless)
+	// } else {
+	// 	targetUrl = serverfulApiBase
+	// 	countServerful += 1
+	// 	fmt.Printf("*** Serverful Count: %d", countServerful)
+	// }
 
 	// Create target URL
 	target, err := url.Parse(targetUrl)

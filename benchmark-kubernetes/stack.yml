@@ -6,4 +6,4 @@ functions:
   benchmark-app:
     lang: dockerfile
     handler: .
-    image: jayanaka98/demonfaas-benchmark-app:latest
+    image: stoneann5490/demonfaas-benchmark-app:latest

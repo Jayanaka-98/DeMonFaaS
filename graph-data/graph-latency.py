@@ -76,7 +76,7 @@ def plot_line(data, line_style):
             for dict in data:
                 if dict["Label"].split()[0] == api:
                     x.append(int(dict["Label"].split()[-1]))
-                    y.append(int(dict["Min"]))
+                    y.append(float(dict["Error %"][:-1]))
             plt.plot(x, y, label=api, linestyle=line_style, color=color_map[api])
 
 def avg_latency_line_graph(data, output_file):
@@ -95,7 +95,7 @@ def avg_latency_line_graph(data, output_file):
 
 def avg_latency_compare(output_file):
     data1 = read_csv("data/all-openfaas-30sec.csv")
-    data2 = read_csv("data/all-kubernetes-30sec.csv")
+    data2 = read_csv("data/all-openfaas-nonsplit-30sec.csv")
 
     plot_line(data1, '-.')
     plot_line(data2, '-')
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     else:
         file_path = sys.argv[1]
         output_file_path = sys.argv[2]
-        data = read_csv(file_path)
+        # data = read_csv(file_path)
         # avg_latency_bar_graph(data, output_file_path)
         # avg_latency_line_graph(data, output_file_path)
-        # avg_latency_compare(output_file_path)
-        box_plot()
+        avg_latency_compare(output_file_path)
+        # box_plot()
