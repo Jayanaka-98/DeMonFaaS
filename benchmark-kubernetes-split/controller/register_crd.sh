@@ -26,4 +26,5 @@ kind load docker-image $1/demonfaas-controller:latest --name demonfaas-cluster
 
 kubectl apply -f controller-deployment.yml
 
-# kubectl port-forward $(kubectl get pods | grep demonfaas-controller | awk '{print $1}') 9000:9000
+# kubectl port-forward $(kubectl get pods | grep demonfaas-controller | awk '{print $1}') 8000:9000
+# kubectl logs $(kubectl get pods | grep demonfaas-controller | awk '{print $1}')

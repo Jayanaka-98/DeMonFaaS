@@ -11,12 +11,12 @@ functions:
   compute:
     lang: dockerfile
     handler: ./benchmark-app-compute
-    image: jayanaka98/demonfaas-benchmark-app:latest
+    image: jayanaka98/demonfaas-benchmark-app-compute:latest
   data:
     lang: dockerfile
     handler: ./benchmark-app-data
-    image: jayanaka98/demonfaas-benchmark-app:latest
+    image: jayanaka98/demonfaas-benchmark-app-data:latest
   quick:
     lang: dockerfile
     handler: ./benchmark-app-quick
-    image: jayanaka98/demonfaas-benchmark-app:latest
+    image: jayanaka98/demonfaas-benchmark-app-quick:latest
