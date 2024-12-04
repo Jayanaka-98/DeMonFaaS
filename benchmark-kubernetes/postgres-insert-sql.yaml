@@ -1,0 +1,21 @@
+apiVersion: v1
+data:
+  insert.sql: |
+    -- Generating 100,000 unique names using 'Name_' prefix followed by row number
+    WITH RECURSIVE number_gen AS (
+        SELECT 1 AS num
+        UNION ALL
+        SELECT num + 1
+        FROM number_gen
+        WHERE num < 100000
+    )
+    INSERT INTO read_heavy (read_name)
+    SELECT CONCAT('Name_', num) AS read_name
+    FROM number_gen;
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2024-11-22T18:15:03Z"
+  name: postgres-insert-sql
+  namespace: default
+  resourceVersion: "1264"
+  uid: 017b5ed9-0618-470f-a986-9bde5d481e67
