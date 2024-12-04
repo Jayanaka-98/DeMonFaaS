@@ -14,6 +14,11 @@ export GOFLAGS=-mod=vendor
 build:
 	./build.sh
 
+.PHONE: build_nested
+build_nested:
+	cp commands/demonfaas.go ${GOPATH}/src/github.com/openfaas/faas-cli/commands
+	make local-install build -C ${GOPATH}/src/github.com/openfaas/faas-cli
+
 .PHONY: build_redist
 build_redist:
 	./extract_binaries.sh
