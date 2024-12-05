@@ -1,7 +1,7 @@
 import csv
 import sys
 import matplotlib.pyplot as plt
-
+import os
 
 color_map = {
     "Read": "BLUE",
@@ -58,14 +58,17 @@ def avg_latency_bar_graph(data, output_file):
     # Save graph
     plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
 
-def box_plot():
-    data = read_csv("data/all-kubernetes-30sec.csv")
-    min_val = int(data[0]["Min"])
-    median_val = int(data[0]["Median"])
-    max_val = int(data[0]["Max"] ) 
-    fig, ax = plt.subplots()
-    ax.boxplot([min_val, median_val, max_val],vert=False, patch_artist=True)
-    plt.show()
+def get_data(data, column = "Average"):
+    apis = list(set([dict["Label"].split()[0] for dict in data]))
+    all = {}
+    for api in apis:
+        y = {}
+        if api != "TOTAL":
+            for dict in data:
+                if dict["Label"].split()[0] == api:
+                    y[int(dict["Label"].split()[-1])] = float(dict[column])
+            all[api] = y
+    return all
 
 def plot_line(data, line_style):
     apis = list(set([dict["Label"].split()[0] for dict in data]))
@@ -76,7 +79,7 @@ def plot_line(data, line_style):
             for dict in data:
                 if dict["Label"].split()[0] == api:
                     x.append(int(dict["Label"].split()[-1]))
-                    y.append(float(dict["Error %"][:-1]))
+                    y.append(float(dict["Average"][:-1]))
             plt.plot(x, y, label=api, linestyle=line_style, color=color_map[api])
 
 def avg_latency_line_graph(data, output_file):
@@ -92,10 +95,47 @@ def avg_latency_line_graph(data, output_file):
     # Save graph
     plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
 
+def plot_avg_line(directory, label, line_style='-'):
+    averages = {}
+    count = 0
+    for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            if os.path.isfile(file_path):
+                data = read_csv(file_path)
+                data = get_data(data)
+                count += 1
+                for key, val in data.items():
+                    if key not in averages:
+                        averages[key] = {}
+                    for key2, val2 in val.items():
+                        if key2 in averages[key]:
+                            averages[key][key2] += val2
+                        else:
+                            averages[key][key2] = val2
+
+    for api, concurrency in averages.items():
+        x = []
+        y = []
+        for concurrency, latency in concurrency.items():
+            y.append(float(latency) / count)
+            x.append(concurrency)
+        plt.plot(x, y, label=api + " - " + label , linestyle=line_style, color=color_map[api])
+
+def avg_benchmark_csvs(output_file, title):
+    plot_avg_line('data/kubernetes-benchmark', "Kubernetes")
+    plot_avg_line('data/split-benchmark', "OpenFaaS", '-.')
+    plt.xlabel('Number of Concurrent Threads')
+    plt.ylabel('Average Time (ms)')
+    plt.title(title)
+    plt.legend()
+
+    # Save graph
+    plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
+
 
 def avg_latency_compare(output_file):
-    data1 = read_csv("data/all-openfaas-30sec.csv")
-    data2 = read_csv("data/all-openfaas-nonsplit-30sec.csv")
+    data1 = read_csv("data/all-openfaas-5-to-100.csv")
+    data2 = read_csv("data/all-kubernetes-5-to-100.csv")
 
     plot_line(data1, '-.')
     plot_line(data2, '-')
@@ -112,12 +152,8 @@ def avg_latency_compare(output_file):
 if __name__ == "__main__":
     # Check if the file path is provided as an argument
     if len(sys.argv) < 2:
-        print("Usage: python3 script.py <path_to_csv_file> <path_to_output_file>")
+        print("Usage: python3 script.py <path_to_output_file> <graph_title>")
     else:
         file_path = sys.argv[1]
         output_file_path = sys.argv[2]
-        # data = read_csv(file_path)
-        # avg_latency_bar_graph(data, output_file_path)
-        # avg_latency_line_graph(data, output_file_path)
-        avg_latency_compare(output_file_path)
-        # box_plot()
+        avg_benchmark_csvs(file_path, output_file_path)
