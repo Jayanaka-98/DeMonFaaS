@@ -70,18 +70,6 @@ def get_data(data, column = "Average"):
             all[api] = y
     return all
 
-def plot_line(data, line_style):
-    apis = list(set([dict["Label"].split()[0] for dict in data]))
-    for api in apis:
-        x = []
-        y = []
-        if api != "TOTAL":
-            for dict in data:
-                if dict["Label"].split()[0] == api:
-                    x.append(int(dict["Label"].split()[-1]))
-                    y.append(float(dict["Average"][:-1]))
-            plt.plot(x, y, label=api, linestyle=line_style, color=color_map[api])
-
 def avg_latency_line_graph(data, output_file):
 
     plot_line(data, '-')
@@ -132,13 +120,26 @@ def avg_benchmark_csvs(output_file, title):
     # Save graph
     plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
 
+def plot_line(data, label, line_style):
+    apis = list(set([dict["Label"].split()[0] for dict in data]))
+    for api in apis:
+        x = []
+        y = []
+        if api != "TOTAL":
+            for dict in data:
+                if dict["Label"].split()[0] == api:
+                    x.append(int(dict["Label"].split()[-1]))
+                    y.append(float(dict["Average"]))
+            plt.plot(x, y, label=api + ' - ' + label, linestyle=line_style, color=color_map[api])
 
 def avg_latency_compare(output_file):
-    data1 = read_csv("data/all-openfaas-5-to-100.csv")
-    data2 = read_csv("data/all-kubernetes-5-to-100.csv")
+    data1 = read_csv("data/all-kube-10pods.csv")
+    data2 = read_csv("data/algo-10pods.csv")
+    data3 = read_csv("data/split-benchmark/split_1.csv")
 
-    plot_line(data1, '-.')
-    plot_line(data2, '-')
+    plot_line(data1,"Kubernetes" , '-.')
+    plot_line(data2, "Algorithm" , '-')
+    plot_line(data3, "OpenFaaS" , '--')
     # Adding labels and title
     plt.xlabel('Number of Concurrent Threads')
     plt.ylabel('Average Time (ms)')
@@ -156,4 +157,5 @@ if __name__ == "__main__":
     else:
         file_path = sys.argv[1]
         output_file_path = sys.argv[2]
-        avg_benchmark_csvs(file_path, output_file_path)
+        avg_latency_compare(output_file_path)
+        # avg_benchmark_csvs(file_path, output_file_path)
