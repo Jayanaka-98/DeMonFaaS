@@ -12,6 +12,8 @@ spec:
   latencyThreshold: 0.5
   evaluationInterval: 30
   cooldownPeriod: 300
+  slowMovingAverageWindowSize: 10
+  fastMovingAverageWindowSize: 3
   routes:
   - route: "/computeapi/sieve/3000000"
     function: "compute"

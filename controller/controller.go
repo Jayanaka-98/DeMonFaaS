@@ -60,14 +60,19 @@ func (avg *latencyAverages) initAverages(slowSize int, fastSize int) {
 	avg.fastMovingAverageWindowSize = fastSize
 	avg.slowWindow = make([]float64, 0)
 	avg.fastWindow = make([]float64, 0)
+	avg.slowAverage = 0
+	avg.fastAverage = 0
 }
 
 func (avg *latencyAverages) updateAverages(latency float64) {
+	// fmt.Printf("latency: %.4f, slow window size: %d, fast window size %d\n", latency, avg.slowMovingAverageWindowSize, avg.fastMovingAverageWindowSize)
+	// fmt.Printf("#1 slow window %.4f, fast window: %.4f\n", avg.slowAverage, avg.fastAverage)
 	avg.slowAverage += (latency / float64(avg.slowMovingAverageWindowSize))
 	avg.slowWindow = append(avg.slowWindow, latency)
 
 	avg.fastAverage += (latency / float64(avg.fastMovingAverageWindowSize))
 	avg.fastWindow = append(avg.fastWindow, latency)
+	// fmt.Printf("#2 slow window %.4f, fast window: %.4f\n", avg.slowAverage, avg.fastAverage)
 
 	if len(avg.slowWindow) > avg.slowMovingAverageWindowSize {
 		avg.slowAverage -= (avg.slowWindow[0] / float64(avg.slowMovingAverageWindowSize))
@@ -78,9 +83,11 @@ func (avg *latencyAverages) updateAverages(latency float64) {
 		avg.fastAverage -= (avg.fastWindow[0] / float64(avg.slowMovingAverageWindowSize))
 		avg.fastWindow = avg.fastWindow[1:]
 	}
+	// fmt.Printf("#3 slow window %.4f, fast window: %.4f\n", avg.slowAverage, avg.fastAverage)
 }
 
 func (avg *latencyAverages) getAverage() float64 {
+	// fmt.Printf("slow avg: %.4f, fast avg: %.4f\n", avg.slowAverage, avg.fastAverage)
 	return max(avg.slowAverage, avg.fastAverage)
 }
 
@@ -292,7 +299,7 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	for _, route := range transformation.Spec.Routes {
 		routingMap.Store(route.Route, route.Function)
-		fmt.Printf("ROUTE: %s, FUNCTION: %s\n", route.Route, route.Function)
+		// fmt.Printf("ROUTE: %s, FUNCTION: %s\n", route.Route, route.Function)
 	}
 
 	serverfulApiBase = transformation.Spec.ServerfulApi
@@ -311,7 +318,7 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		_, ok := route_averages.Load(route)
 		if !ok {
 			avgObj := latencyAverages{}
-			avgObj.initAverages(transformation.Spec.slowMovingAverageWindowSize, transformation.Spec.fastMovingAverageWindowSize)
+			avgObj.initAverages(10, 3)
 			route_averages.Store(route, avgObj)
 		}
 
@@ -340,6 +347,7 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 func RatioCalculator(max_latency float64, latency_threshold float64) float64 {
 	percentage_of_full := max_latency / latency_threshold
+	// fmt.Printf("MAX LATENCY: %.4f, LATENCY_THRESHOLD: %.4f, PCT: %.4f\n", max_latency, latency_threshold, percentage_of_full)
 	if percentage_of_full >= 1 {
 		return 0
 	} else if percentage_of_full >= 0.6 {
