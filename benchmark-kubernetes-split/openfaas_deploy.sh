@@ -42,10 +42,10 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo add stable https://charts.helm.sh/stable
 helm repo update
 
-kubectl create namespace monitoring 2>/dev/null || true
+# kubectl create namespace monitoring 2>/dev/null || true
 echo "Installing Prometheus Stack..."
 helm install kind-prometheus prometheus-community/kube-prometheus-stack \
-    --namespace monitoring \
+    --namespace default \
     --set prometheus.service.nodePort=30000 \
     --set prometheus.service.type=NodePort \
     --set grafana.service.nodePort=31000 \

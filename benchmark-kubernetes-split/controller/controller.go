@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -184,28 +185,37 @@ func (r *ApiTransformationReconciler) getMetrics(ctx context.Context, apiPath st
 
 	// Query request rate
 	requestRateQuery := fmt.Sprintf(`rate(http_requests_total{path="%s"}[5m])`, apiPath)
+	fmt.Printf(`>>> rate(http_requests_total{path="%s"}[5m])`, apiPath)
 	if requestRate, err := queryPrometheusMetric(requestRateQuery); err == nil {
 		metrics.RequestRate = requestRate
+	} else {
+		logger.Error(err, "Failed to get request rate")
 	}
 
 	// Query latency
 	latencyQuery := fmt.Sprintf(`rate(http_request_duration_seconds_sum{path="%s"}[5m]) / rate(http_request_duration_seconds_count{path="%s"}[5m])`, apiPath, apiPath)
 	if latency, err := queryPrometheusMetric(latencyQuery); err == nil {
 		metrics.AvgLatency = latency
+	} else {
+		logger.Error(err, "Failed to get latency")
 	}
 
 	// Query error rate
 	errorRateQuery := fmt.Sprintf(`rate(http_requests_total{path="%s",status=~"5.."}[5m]) / rate(http_requests_total{path="%s"}[5m])`, apiPath, apiPath)
 	if errorRate, err := queryPrometheusMetric(errorRateQuery); err == nil {
 		metrics.ErrorRate = errorRate
+	} else {
+		logger.Error(err, "Failed to get error rate")
 	}
 
 	// Query CPU utilization
 	cpuQuery := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{container=~"%s"}[5m])) / sum(container_spec_cpu_quota{container=~"%s"}) * 100`, apiPath, apiPath)
 	if cpuUtil, err := queryPrometheusMetric(cpuQuery); err == nil {
 		metrics.CPUUtilization = cpuUtil
+	} else {
+		logger.Error(err, "Failed to get CPU utilization")
 	}
-
+	fmt.Printf("\n\nMETRICS: %+v\n\n", metrics)
 	return metrics, nil
 }
 
@@ -362,12 +372,29 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func queryPrometheusMetric(query string) (float64, error) {
-	prometheusURL := "http://prometheus-operated.monitoring.svc.cluster.local:9090"
+	prometheusURL := "http://prometheus-operated.default:9090"
+	// fmt.Printf("\n---------------Querying Prometheus: %s\n", query)
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, url.QueryEscape(query)))
+	// fmt.Printf("\n----------------Response: %v\n", resp)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
+	// fmt.Printf("\n----------------Response status: %s\n", resp.Status)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Read error: %v\n", err)
+		return 0, err
+	}
+	// fmt.Printf("\n-----------Raw response: %s\n", string(body))
+
+	var result_1 PrometheusResponse
+	if err := json.Unmarshal(body, &result_1); err != nil {
+		fmt.Printf("JSON error: %v\n", err)
+		return 0, err
+	}
+
+	fmt.Printf("Parsed response: %+v\n", result_1)
 
 	var result PrometheusResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {

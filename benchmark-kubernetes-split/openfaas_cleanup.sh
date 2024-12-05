@@ -17,8 +17,8 @@ kubectl delete namespace openfaas-fn 2>/dev/null || true
 
 # Delete Prometheus Stack and monitoring namespace
 echo "Cleaning up Prometheus Stack..."
-helm uninstall kind-prometheus --namespace monitoring 2>/dev/null || true
-kubectl delete namespace monitoring 2>/dev/null || true
+helm uninstall kind-prometheus --namespace default 2>/dev/null || true
+# kubectl delete namespace monitoring 2>/dev/null || true
 
 # Remove Helm repositories
 echo "Removing Helm repositories..."
