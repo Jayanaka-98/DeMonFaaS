@@ -42,6 +42,21 @@ spec:
               cooldownPeriod:
                 type: integer
                 default: 300
+              slowMovingAverageWindowSize:
+                type: integer
+                default: 10
+              fastMovingAverageWindowSize:
+                type: integer
+                default: 3
+              routes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    route:
+                      type: string
+                    function:
+                      type: string
           status:
             type: object
             properties:

@@ -29,6 +29,7 @@ var (
 	serverfulApiBase  = ""
 	countServerless   = 0
 	countServerful    = 0
+	routingMap        = &sync.Map{}
 	averages          = latencyAverages{}
 )
 
@@ -168,15 +169,21 @@ func (in *ApiTransformationList) DeepCopyObject() runtime.Object {
 }
 
 type ApiTransformationSpec struct {
-	SourceApi                   string  `json:"sourceApi"`
-	ServerlessApi               string  `json:"serverlessApi"`
-	ServerfulApi                string  `json:"serverfulApi"`
-	RequestThreshold            int64   `json:"requestThreshold"`
-	LatencyThreshold            float64 `json:"latencyThreshold"`
-	EvaluationInterval          int     `json:"evaluationInterval"`
-	CooldownPeriod              int     `json:"cooldownPeriod"`
-	slowMovingAverageWindowSize int     `json:"slowMovingAverageWindowSize"`
-	fastMovingAverageWindowSize int     `json:"fastMovingAverageWindowSize"`
+	SourceApi                   string                   `json:"sourceApi"`
+	ServerlessApi               string                   `json:"serverlessApi"`
+	ServerfulApi                string                   `json:"serverfulApi"`
+	RequestThreshold            int64                    `json:"requestThreshold"`
+	LatencyThreshold            float64                  `json:"latencyThreshold"`
+	EvaluationInterval          int                      `json:"evaluationInterval"`
+	CooldownPeriod              int                      `json:"cooldownPeriod"`
+	slowMovingAverageWindowSize int                      `json:"slowMovingAverageWindowSize"`
+	fastMovingAverageWindowSize int                      `json:"fastMovingAverageWindowSize"`
+	Routes                      []ApiTransformationRoute `json:"routes"`
+}
+
+type ApiTransformationRoute struct {
+	Route    string `json:"route"`
+	Function string `json:"function"`
 }
 
 type ApiTransformationStatus struct {
@@ -276,6 +283,11 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	for _, route := range transformation.Spec.Routes {
+		routingMap.Store(route.Route, route.Function)
+		fmt.Printf("ROUTE: %s, FUNCTION: %s\n", route.Route, route.Function)
+	}
+
 	serverfulApiBase = transformation.Spec.ServerfulApi
 	serverlessApiBase = transformation.Spec.ServerlessApi
 
@@ -348,15 +360,20 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	var targetUrl string
 
 	// Determine target URL based on routing decision
-	// if routingDecision.UseServerless {
-	targetUrl = serverlessApiBase
-	countServerless += 1
-	fmt.Printf("*** Serverless Count: %d", countServerless)
-	// } else {
-	// 	targetUrl = serverfulApiBase
-	// 	countServerful += 1
-	// 	fmt.Printf("*** Serverful Count: %d", countServerful)
-	// }
+	if routingDecision.UseServerless {
+		val, ok := routingMap.Load(sourceApi)
+		if !ok {
+			http.Error(w, "Invalid target URL", http.StatusInternalServerError)
+			return
+		}
+		targetUrl = serverlessApiBase + val.(string)
+		countServerless += 1
+		fmt.Printf("*** Serverless Count: %d", countServerless)
+	} else {
+		targetUrl = serverfulApiBase
+		countServerful += 1
+		fmt.Printf("*** Serverful Count: %d", countServerful)
+	}
 
 	// Create target URL
 	target, err := url.Parse(targetUrl)

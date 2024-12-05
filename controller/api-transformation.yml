@@ -12,3 +12,14 @@ spec:
   latencyThreshold: 0.5
   evaluationInterval: 30
   cooldownPeriod: 300
+  routes:
+  - route: "/computeapi/sieve/3000000"
+    function: "compute"
+  - route: "/dataapi/read"
+    function: "data"
+  - route: "/dataapi/write"
+    function: "data"
+  - route: "/quickapi/test1"
+    function: "quick"
+  - route: "/"
+    function: "benchmark-app"
