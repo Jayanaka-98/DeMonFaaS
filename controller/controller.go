@@ -263,17 +263,18 @@ func (r *ApiTransformationReconciler) getMetrics(ctx context.Context, apiPath st
 }
 
 func (r *ApiTransformationReconciler) shouldUseServerless(metrics *Metrics, spec *ApiTransformationSpec) bool {
-	// Decision logic based on multiple factors
-	if metrics.RequestRate > float64(spec.RequestThreshold) {
-		return true
-	}
-	if metrics.AvgLatency > spec.LatencyThreshold {
-		return false
-	}
-	if metrics.CPUUtilization > 80 { // High CPU utilization on serverful
-		return true
-	}
-	return false
+	// // Decision logic based on multiple factors
+	// if metrics.RequestRate > float64(spec.RequestThreshold) {
+	// 	return true
+	// }
+	// if metrics.AvgLatency > spec.LatencyThreshold {
+	// 	return false
+	// }
+	// if metrics.CPUUtilization > 80 { // High CPU utilization on serverful
+	// 	return true
+	// }
+	// return false
+
 }
 
 // SetupWithManager sets up the controller with the Manager
@@ -293,12 +294,11 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	for _, route := range transformation.Spec.Routes {
-		val, ok := route_averages.Load(route)
+		_, ok := route_averages.Load(route)
 		if !ok {
-			route_averages.Store(route, latencyAverages{})
-			val, ok = route_averages.Load(route)
-			valObj := val.(latencyAverages)
-			valObj.initAverages(transformation.Spec.slowMovingAverageWindowSize, transformation.Spec.fastMovingAverageWindowSize)
+			avgObj := latencyAverages{}
+			avgObj.initAverages(transformation.Spec.slowMovingAverageWindowSize, transformation.Spec.fastMovingAverageWindowSize)
+			route_averages.Store(route, avgObj)
 		}
 	}
 
