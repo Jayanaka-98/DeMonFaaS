@@ -80,17 +80,15 @@ func (avg *latencyAverages) updateAverages(latency float64) {
 	}
 }
 
-func (avg *latencyAverages) getAverage() (float64, float64) {
-	return avg.slowAverage, avg.fastAverage
+func (avg *latencyAverages) getAverage() float64 {
+	return max(avg.slowAverage, avg.fastAverage)
 }
 
-func createChooser(choice1 string, choice2 string, ratio float64) func() string {
-	return func() string {
-		if rand.Float64() < ratio {
-			return choice1
-		} else {
-			return choice2
-		}
+func ChooseServerful(severful_percentage float64) bool {
+	if rand.Float64() < severful_percentage {
+		return true
+	} else {
+		return false
 	}
 }
 
@@ -113,10 +111,10 @@ type ApiTransformationList struct {
 }
 
 type RoutingDecision struct {
-	UseServerless bool
-	LastUpdated   time.Time
-	RequestCount  int64
-	LatencyAvg    float64
+	ServerfulPercentage float64
+	LastUpdated         time.Time
+	RequestCount        int64
+	LatencyAvg          float64
 }
 
 // DeepCopyInto copies all properties of this object into another object of the same type
@@ -263,18 +261,17 @@ func (r *ApiTransformationReconciler) getMetrics(ctx context.Context, apiPath st
 }
 
 func (r *ApiTransformationReconciler) shouldUseServerless(metrics *Metrics, spec *ApiTransformationSpec) bool {
-	// // Decision logic based on multiple factors
-	// if metrics.RequestRate > float64(spec.RequestThreshold) {
-	// 	return true
-	// }
-	// if metrics.AvgLatency > spec.LatencyThreshold {
-	// 	return false
-	// }
-	// if metrics.CPUUtilization > 80 { // High CPU utilization on serverful
-	// 	return true
-	// }
-	// return false
-
+	// Decision logic based on multiple factors
+	if metrics.RequestRate > float64(spec.RequestThreshold) {
+		return true
+	}
+	if metrics.AvgLatency > spec.LatencyThreshold {
+		return false
+	}
+	if metrics.CPUUtilization > 80 { // High CPU utilization on serverful
+		return true
+	}
+	return false
 }
 
 // SetupWithManager sets up the controller with the Manager
@@ -291,15 +288,6 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	var transformation ApiTransformation
 	if err := r.Get(ctx, req.NamespacedName, &transformation); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	for _, route := range transformation.Spec.Routes {
-		_, ok := route_averages.Load(route)
-		if !ok {
-			avgObj := latencyAverages{}
-			avgObj.initAverages(transformation.Spec.slowMovingAverageWindowSize, transformation.Spec.fastMovingAverageWindowSize)
-			route_averages.Store(route, avgObj)
-		}
 	}
 
 	for _, route := range transformation.Spec.Routes {
@@ -320,20 +308,27 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 
 		// useServerless := r.shouldUseServerless(metrics, &transformation.Spec)
-
-		routingCache.Store(route, &RoutingDecision{
-			UseServerless: true,
-			LastUpdated:   time.Now(),
-			RequestCount:  int64(0),
-			LatencyAvg:    avgLatency,
-		})
+		_, ok := route_averages.Load(route)
+		if !ok {
+			avgObj := latencyAverages{}
+			avgObj.initAverages(transformation.Spec.slowMovingAverageWindowSize, transformation.Spec.fastMovingAverageWindowSize)
+			route_averages.Store(route, avgObj)
+		}
 
 		val, _ := route_averages.Load(route)
 		avgObj := val.(latencyAverages)
 		avgObj.updateAverages(avgLatency)
 		route_averages.Store(route, avgObj)
 
-		// update chooser here
+		ratio := RatioCalculator(avgObj.getAverage(), transformation.Spec.LatencyThreshold)
+		fmt.Println("UPDATED RATIO: ", ratio)
+
+		routingCache.Store(route, &RoutingDecision{
+			ServerfulPercentage: ratio,
+			LastUpdated:         time.Now(),
+			RequestCount:        int64(0),
+			LatencyAvg:          avgLatency,
+		})
 
 		return true // Returning true to continue iteration
 	})
@@ -343,6 +338,23 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}, nil
 }
 
+func RatioCalculator(max_latency float64, latency_threshold float64) float64 {
+	percentage_of_full := max_latency / latency_threshold
+	if percentage_of_full >= 1 {
+		return 0
+	} else if percentage_of_full >= 0.6 {
+		// 60 -> 80
+		// 70 -> 60
+		// 80 -> 40
+		// 90 -> 20
+		// 100 -> 0
+		diff := percentage_of_full - 0.6
+		return 1 - 2*diff
+	} else {
+		return 1
+	}
+}
+
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	sourceApi := r.URL.Path
 
@@ -350,10 +362,10 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	decision, ok := routingCache.Load(sourceApi)
 	if !ok {
 		var newRouteDecision = &RoutingDecision{
-			UseServerless: false,
-			LastUpdated:   time.Now(),
-			RequestCount:  1,
-			LatencyAvg:    0,
+			ServerfulPercentage: 1,
+			LastUpdated:         time.Now(),
+			RequestCount:        1,
+			LatencyAvg:          0,
 		}
 
 		routingCache.Store(sourceApi, newRouteDecision)
@@ -364,13 +376,13 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	var targetUrl string
 
 	// Determine target URL based on routing decision
-	if routingDecision.UseServerless {
-		val, ok := routingMap.Load(sourceApi)
+	if !ChooseServerful(routingDecision.ServerfulPercentage) {
+		_, ok := routingMap.Load(sourceApi)
 		if !ok {
 			http.Error(w, "Invalid target URL", http.StatusInternalServerError)
 			return
 		}
-		targetUrl = serverlessApiBase + val.(string)
+		targetUrl = serverlessApiBase
 		countServerless += 1
 		fmt.Printf("*** Serverless Count: %d", countServerless)
 	} else {
@@ -402,7 +414,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	r.URL.Host = target.Host
 	r.URL.Scheme = target.Scheme
 	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-	r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.UseServerless))
+	r.Header.Set("X-Routing-Type", fmt.Sprintf("serverless=%v", routingDecision.ServerfulPercentage))
 	r.Host = target.Host
 
 	// Forward the request
