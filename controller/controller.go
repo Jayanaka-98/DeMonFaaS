@@ -31,7 +31,7 @@ var (
 	countServerless   = 0
 	countServerful    = 0
 	routingMap        = &sync.Map{}
-	averages          = latencyAverages{}
+	route_averages    = &sync.Map{}
 )
 
 // GroupVersion is group version used to register these objects
@@ -55,24 +55,33 @@ type latencyAverages struct {
 	fastMovingAverageWindowSize int
 }
 
-func (avg *latencyAverages) initAverages() {
+func (avg *latencyAverages) initAverages(slowSize int, fastSize int) {
+	avg.slowMovingAverageWindowSize = slowSize
+	avg.fastMovingAverageWindowSize = fastSize
 	avg.slowWindow = make([]float64, 0)
 	avg.fastWindow = make([]float64, 0)
 }
 
 func (avg *latencyAverages) updateAverages(latency float64) {
 	avg.slowAverage += (latency / float64(avg.slowMovingAverageWindowSize))
+	avg.slowWindow = append(avg.slowWindow, latency)
+
 	avg.fastAverage += (latency / float64(avg.fastMovingAverageWindowSize))
+	avg.fastWindow = append(avg.fastWindow, latency)
 
 	if len(avg.slowWindow) > avg.slowMovingAverageWindowSize {
 		avg.slowAverage -= (avg.slowWindow[0] / float64(avg.slowMovingAverageWindowSize))
 		avg.slowWindow = avg.slowWindow[1:]
 	}
 
-	if len(avg.fastWindow) > averages.fastMovingAverageWindowSize {
+	if len(avg.fastWindow) > avg.fastMovingAverageWindowSize {
 		avg.fastAverage -= (avg.fastWindow[0] / float64(avg.slowMovingAverageWindowSize))
 		avg.fastWindow = avg.fastWindow[1:]
 	}
+}
+
+func (avg *latencyAverages) getAverage() (float64, float64) {
+	return avg.slowAverage, avg.fastAverage
 }
 
 func createChooser(choice1 string, choice2 string, ratio float64) func() string {
@@ -284,6 +293,16 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	for _, route := range transformation.Spec.Routes {
+		val, ok := route_averages.Load(route)
+		if !ok {
+			route_averages.Store(route, latencyAverages{})
+			val, ok = route_averages.Load(route)
+			valObj := val.(latencyAverages)
+			valObj.initAverages(transformation.Spec.slowMovingAverageWindowSize, transformation.Spec.fastMovingAverageWindowSize)
+		}
+	}
+
+	for _, route := range transformation.Spec.Routes {
 		routingMap.Store(route.Route, route.Function)
 		fmt.Printf("ROUTE: %s, FUNCTION: %s\n", route.Route, route.Function)
 	}
@@ -309,6 +328,13 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			LatencyAvg:    avgLatency,
 		})
 
+		val, _ := route_averages.Load(route)
+		avgObj := val.(latencyAverages)
+		avgObj.updateAverages(avgLatency)
+		route_averages.Store(route, avgObj)
+
+		// update chooser here
+
 		return true // Returning true to continue iteration
 	})
 
@@ -329,6 +355,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 			RequestCount:  1,
 			LatencyAvg:    0,
 		}
+
 		routingCache.Store(sourceApi, newRouteDecision)
 		decision = newRouteDecision
 	}
