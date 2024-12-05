@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  init.sql: |-
+    CREATE TABLE IF NOT EXISTS read_heavy
+    (
+        read_name varchar(50) not null
+    );
+
+    CREATE TABLE IF NOT EXISTS write_heavy
+    (
+        write_id   int not null,
+        write_name varchar(50) not null
+    );
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2024-12-05T14:18:57Z"
+  name: postgres-init-sql
+  namespace: default
+  resourceVersion: "1168"
+  uid: 20ce78d3-6875-4d4e-9e4c-632c7025b832
