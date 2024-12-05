@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -28,6 +29,7 @@ var (
 	serverfulApiBase  = ""
 	countServerless   = 0
 	countServerful    = 0
+	averages          = latencyAverages{}
 )
 
 // GroupVersion is group version used to register these objects
@@ -40,6 +42,45 @@ var SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 func AddToScheme(s *runtime.Scheme) error {
 	SchemeBuilder.Register(&ApiTransformation{}, &ApiTransformationList{})
 	return nil
+}
+
+type latencyAverages struct {
+	slowAverage                 float64
+	fastAverage                 float64
+	slowWindow                  []float64
+	fastWindow                  []float64
+	slowMovingAverageWindowSize int
+	fastMovingAverageWindowSize int
+}
+
+func (avg *latencyAverages) initAverages() {
+	avg.slowWindow = make([]float64, 0)
+	avg.fastWindow = make([]float64, 0)
+}
+
+func (avg *latencyAverages) updateAverages(latency float64) {
+	avg.slowAverage += (latency / float64(avg.slowMovingAverageWindowSize))
+	avg.fastAverage += (latency / float64(avg.fastMovingAverageWindowSize))
+
+	if len(avg.slowWindow) > avg.slowMovingAverageWindowSize {
+		avg.slowAverage -= (avg.slowWindow[0] / float64(avg.slowMovingAverageWindowSize))
+		avg.slowWindow = avg.slowWindow[1:]
+	}
+
+	if len(avg.fastWindow) > averages.fastMovingAverageWindowSize {
+		avg.fastAverage -= (avg.fastWindow[0] / float64(avg.slowMovingAverageWindowSize))
+		avg.fastWindow = avg.fastWindow[1:]
+	}
+}
+
+func createChooser(choice1 string, choice2 string, ratio float64) func() string {
+	return func() string {
+		if rand.Float64() < ratio {
+			return choice1
+		} else {
+			return choice2
+		}
+	}
 }
 
 // ApiTransformation defines the custom resource
@@ -127,13 +168,15 @@ func (in *ApiTransformationList) DeepCopyObject() runtime.Object {
 }
 
 type ApiTransformationSpec struct {
-	SourceApi          string  `json:"sourceApi"`
-	ServerlessApi      string  `json:"serverlessApi"`
-	ServerfulApi       string  `json:"serverfulApi"`
-	RequestThreshold   int64   `json:"requestThreshold"`
-	LatencyThreshold   float64 `json:"latencyThreshold"`
-	EvaluationInterval int     `json:"evaluationInterval"`
-	CooldownPeriod     int     `json:"cooldownPeriod"`
+	SourceApi                   string  `json:"sourceApi"`
+	ServerlessApi               string  `json:"serverlessApi"`
+	ServerfulApi                string  `json:"serverfulApi"`
+	RequestThreshold            int64   `json:"requestThreshold"`
+	LatencyThreshold            float64 `json:"latencyThreshold"`
+	EvaluationInterval          int     `json:"evaluationInterval"`
+	CooldownPeriod              int     `json:"cooldownPeriod"`
+	slowMovingAverageWindowSize int     `json:"slowMovingAverageWindowSize"`
+	fastMovingAverageWindowSize int     `json:"fastMovingAverageWindowSize"`
 }
 
 type ApiTransformationStatus struct {
