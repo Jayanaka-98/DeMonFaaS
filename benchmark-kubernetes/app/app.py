@@ -8,15 +8,15 @@ from prometheus_client import start_http_server, Counter, Histogram, Gauge
 app = Flask(__name__)
 
 # Define Prometheus metrics
-REQUEST_COUNT = Counter(
-    'http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint', 'http_status']
-)
+# REQUEST_COUNT = Counter(
+#     'http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint', 'http_status']
+# )
 REQUEST_LATENCY = Histogram(
     'http_request_latency_seconds', 'Latency of HTTP requests in seconds', ['method', 'endpoint']
 )
-ACTIVE_REQUESTS = Gauge(
-    'http_active_requests', 'Number of active requests', ['method', 'endpoint']
-)
+# ACTIVE_REQUESTS = Gauge(
+#     'http_active_requests', 'Number of active requests', ['method', 'endpoint']
+# )
 
 # Start Prometheus metrics server
 with app.app_context():
@@ -36,14 +36,14 @@ def after_request(response):
     request_latency = time.time() - request.start_time
     REQUEST_LATENCY.labels(method=request.method, endpoint=request.path).observe(request_latency)
 
-    # Record request count
-    REQUEST_COUNT.labels(
-        method=request.method, endpoint=request.path, http_status=response.status_code
-    ).inc()
+    # # Record request count
+    # REQUEST_COUNT.labels(
+    #     method=request.method, endpoint=request.path, http_status=response.status_code
+    # ).inc()
 
-    # Track active requests
-    ACTIVE_REQUESTS.labels(method=request.method, endpoint=request.path).inc()
-    ACTIVE_REQUESTS.labels(method=request.method, endpoint=request.path).dec()
+    # # Track active requests
+    # ACTIVE_REQUESTS.labels(method=request.method, endpoint=request.path).inc()
+    # ACTIVE_REQUESTS.labels(method=request.method, endpoint=request.path).dec()
 
     return response
 

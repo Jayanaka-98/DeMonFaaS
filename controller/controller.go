@@ -1,17 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand/v2"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/prometheus/common/expfmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -254,7 +255,6 @@ func (r *ApiTransformationReconciler) getMetrics(ctx context.Context, apiPath st
 
 func (r *ApiTransformationReconciler) shouldUseServerless(metrics *Metrics, spec *ApiTransformationSpec) bool {
 	// Decision logic based on multiple factors
-	fmt.Printf("\nREQUEST RATE: %d; AVG LATENCY: %d; CPU UTILIZATION: %d\n", metrics.RequestRate, metrics.AvgLatency, metrics.CPUUtilization)
 	if metrics.RequestRate > float64(spec.RequestThreshold) {
 		return true
 	}
@@ -294,46 +294,23 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Iterate through the sync.Map
 	routingCache.Range(func(key, value interface{}) bool {
 		route := key.(string) // Type assertion for key
-		// ip := value.(string)  // Type assertion for value
 
-		metrics, err := r.getMetrics(ctx, transformation.Spec.SourceApi+route)
+		avgLatency, err := getAvgLatency(route)
 		if err != nil {
 			logger.Error(err, "Failed to get metrics")
 		}
 
-		useServerless := r.shouldUseServerless(metrics, &transformation.Spec)
+		// useServerless := r.shouldUseServerless(metrics, &transformation.Spec)
 
 		routingCache.Store(route, &RoutingDecision{
-			UseServerless: useServerless,
+			UseServerless: true,
 			LastUpdated:   time.Now(),
-			RequestCount:  int64(metrics.RequestRate),
-			LatencyAvg:    metrics.AvgLatency,
+			RequestCount:  int64(0),
+			LatencyAvg:    avgLatency,
 		})
 
 		return true // Returning true to continue iteration
 	})
-
-	// Update status
-	// transformation.Status.CurrentMetrics = *metrics
-	// transformation.Status.LastUpdateTime = metav1.Now()
-	// transformation.Status.CurrentTarget = transformation.Spec.ServerfulApi
-	// if useServerless {
-	// 	transformation.Status.CurrentTarget = transformation.Spec.ServerlessApi
-	// }
-
-	// Store decision in cache
-	// routingCache.Store(transformation.Spec.SourceApi, &RoutingDecision{
-	// 	UseServerless: useServerless,
-	// 	LastUpdated:   time.Now(),
-	// 	RequestCount:  int64(metrics.RequestRate),
-	// 	LatencyAvg:    metrics.AvgLatency,
-	// })
-
-	// fmt.Println("\n\nTRANSFORMATION: ", transformation)
-	// if err := r.Update(ctx, &transformation); err != nil {
-	// 	logger.Error(err, "Failed to update ApiTransformation status")
-	// 	return ctrl.Result{}, err
-	// }
 
 	return ctrl.Result{
 		RequeueAfter: time.Duration(transformation.Spec.EvaluationInterval) * time.Second,
@@ -405,30 +382,103 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	proxy.ServeHTTP(w, r)
 }
 
-func queryPrometheusMetric(query string) (float64, error) {
-	prometheusURL := "http://prometheus-operated.monitoring.svc.cluster.local:9090"
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, url.QueryEscape(query)))
+func getAvgLatency(route string) (float64, error) {
+	// Step 1: Scrape metrics from the /metrics endpoint
+	resp, err := http.Get("http://benchmark-app-service.default.svc.cluster.local:8080/metrics")
 	if err != nil {
+		fmt.Println("Error fetching metrics:", err)
 		return 0, err
 	}
 	defer resp.Body.Close()
 
-	var result PrometheusResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
 		return 0, err
 	}
 
-	if len(result.Data.Result) == 0 {
-		return 0, fmt.Errorf("no data found")
+	// Step 2: Parse metrics
+	var parser expfmt.TextParser
+	metrics, err := parser.TextToMetricFamilies(bytes.NewReader(body))
+	if err != nil {
+		fmt.Println("Error parsing metrics:", err)
+		return 0, err
 	}
 
-	// Extract value
-	value, ok := result.Data.Result[0].Value[1].(string)
-	if !ok {
-		return 0, fmt.Errorf("invalid value type")
+	// Step 3: Extract latency metric
+	metricName := "http_request_latency_seconds" // Adjust to your metric name
+	if family, found := metrics[metricName]; found {
+		for _, m := range family.GetMetric() {
+			for _, label := range m.GetLabel() {
+				if *label.Name == "endpoint" && *label.Value == route {
+					if m.GetHistogram() != nil {
+						hist := m.GetHistogram()
+						count := float64(hist.GetSampleCount())
+						sum := hist.GetSampleSum()
+						// Calculate average latency
+						if count > 0 {
+							averageLatency := sum / count
+							fmt.Printf("Average latency for endpoint %s: %.4f seconds\n", route, averageLatency)
+							return averageLatency, nil
+						} else {
+							fmt.Println("No samples recorded for latency")
+						}
+					}
+				}
+			}
+		}
+	} else {
+		fmt.Println("Latency metric not found")
+	}
+	return 0, nil
+}
+
+func queryPrometheusMetric(query string) (float64, error) {
+	// Step 1: Scrape metrics from the /metrics endpoint
+	resp, err := http.Get("http://benchmark-app-service.default.svc.cluster.local:8080/metrics")
+	if err != nil {
+		fmt.Println("Error fetching metrics:", err)
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return 0, err
 	}
 
-	return strconv.ParseFloat(value, 64)
+	// Step 2: Parse metrics
+	var parser expfmt.TextParser
+	metrics, err := parser.TextToMetricFamilies(bytes.NewReader(body))
+	if err != nil {
+		fmt.Println("Error parsing metrics:", err)
+		return 0, err
+	}
+
+	// Step 3: Extract latency metric
+	metricName := "http_request_latency_seconds" // Adjust to your metric name
+	if family, found := metrics[metricName]; found {
+		for _, m := range family.GetMetric() {
+			if m.GetHistogram() != nil {
+				hist := m.GetHistogram()
+				count := float64(hist.GetSampleCount())
+				sum := hist.GetSampleSum()
+
+				// Calculate average latency
+				if count > 0 {
+					averageLatency := sum / count
+					fmt.Printf("Average latency: %.4f seconds\n", averageLatency)
+					return averageLatency, nil
+				} else {
+					fmt.Println("No samples recorded for latency")
+				}
+			}
+		}
+	} else {
+		fmt.Println("Latency metric not found")
+	}
+	return 0, nil
 }
 
 func main() {
