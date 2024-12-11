@@ -120,34 +120,36 @@ def avg_benchmark_csvs(output_file, title):
     # Save graph
     plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
 
-def plot_line(data, label, line_style):
-    apis = list(set([dict["Label"].split()[0] for dict in data]))
-    for api in apis:
-        x = []
-        y = []
-        if api != "TOTAL":
-            for dict in data:
-                if dict["Label"].split()[0] == api:
-                    x.append(int(dict["Label"].split()[-1]))
-                    y.append(float(dict["Average"]))
-            plt.plot(x, y, label=api + ' - ' + label, linestyle=line_style, color=color_map[api])
+def plot_line(data, label, line_style, api):
+    x = []
+    y = []
+    if api != "TOTAL":
+        for dict in data:
+            if dict["Label"].split()[0] == api:
+                x.append(int(dict["Label"].split()[-1]))
+                y.append(float(dict["Average"]))
+        plt.plot(x, y, label=api + ' - ' + label, linestyle=line_style, color=color_map[api])
 
 def avg_latency_compare(output_file):
     data1 = read_csv("data/all-kube-10pods.csv")
     data2 = read_csv("data/algo-10pods.csv")
     data3 = read_csv("data/split-benchmark/split_1.csv")
 
-    plot_line(data1,"Kubernetes" , '-.')
-    plot_line(data2, "Algorithm" , '-')
-    plot_line(data3, "OpenFaaS" , '--')
-    # Adding labels and title
-    plt.xlabel('Number of Concurrent Threads')
-    plt.ylabel('Average Time (ms)')
-    plt.title('Benchmark Average Latency')
-    plt.legend()
+    apis = list(set([dict["Label"].split()[0] for dict in data1]))
+    for api in apis:
+        plot_line(data1,"Kubernetes" , '-.', api)
+        plot_line(data2, "Algorithm" , '-', api)
+        plot_line(data3, "OpenFaaS" , '--', api)
+        # Adding labels and title
+        plt.xlabel('Number of Concurrent Threads')
+        plt.ylabel('Average Time (ms)')
+        plt.title('Benchmark Average Latency')
+        plt.legend()
 
-    # Save graph
-    plt.savefig(f'{output_file}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
+        # Save graph
+        plt.savefig(f'{output_file}_{api}.png', format='png', dpi=300, bbox_inches='tight')  # Save as a high-resolution PNG
+        plt.clf()
+        
 
 
 if __name__ == "__main__":
