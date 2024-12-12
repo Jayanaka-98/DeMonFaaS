@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const DEBUG = true
+const DEBUG = false
 
 func d_print(strs ...interface{}) {
 	if !DEBUG {
@@ -41,7 +41,7 @@ const (
 var splitProjects = [4]string{"benchmark-app", "benchmark-app-compute", "benchmark-app-data", "benchmark-app-quick"}
 
 func init() {
-	d_print("demonfaas init")
+	d_print("demonfaas init 1")
 
 	demonfaasCmd.Flags().StringVar(&projectPath, "path", "", "original project path directory")
 	demonfaasCmd.Flags().StringVar(&dockerhubUsername, "username", "", "dockerhub username")
@@ -177,15 +177,43 @@ functions:
 }
 
 func runScript(cmd *cobra.Command, args []string) error {
-	execCmd := exec.Command("./scripts/openfaas_deploy.sh")
+	execCmd := exec.Command("./scripts/openfaas_cleanup.sh")
 	stdout, err := execCmd.Output()
+	println("script cleanup output")
+	println(string(stdout))
 
 	if err != nil {
 		panic(err)
 	}
 
-	println("script output")
-	println(stdout)
+	execCmd = exec.Command("./scripts/openfaas_deploy.sh")
+	stdout, err = execCmd.Output()
+	println("script deploy output")
+	println(string(stdout))
+
+	if err != nil {
+		panic(err)
+	}
+
+	execCmd = exec.Command("./controller/unregister.sh", dockerhubUsername)
+	stdout, err = execCmd.Output()
+	println("controller cleanup output")
+	println(string(stdout))
+
+	if err != nil {
+		panic(err)
+	}
+
+	execCmd = exec.Command("./controller/register_crd.sh", dockerhubUsername)
+	stdout, err = execCmd.Output()
+	println("controller deploy output")
+	println(string(stdout))
+
+	if err != nil {
+		panic(err)
+	}
+
+	// println("script output")
 
 	return nil
 }
@@ -193,16 +221,15 @@ func runScript(cmd *cobra.Command, args []string) error {
 func preRun(cmd *cobra.Command, args []string) error {
 	d_print("pre run demonfass with dockerfile", projectPath)
 
-	// modifyAndGenerateDockerfile(cmd, args)
-	// generateStackYaml(cmd, args)
-	runScript(cmd, args)
+	modifyAndGenerateDockerfile(cmd, args)
+	generateStackYaml(cmd, args)
 
 	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {
 	d_print("run")
-
+	runScript(cmd, args)
 	// run the script
 	return nil
 }

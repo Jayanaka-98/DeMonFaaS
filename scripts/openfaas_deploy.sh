@@ -5,6 +5,8 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+cd scripts
+
 # Function to wait for a deployment to be ready
 wait_for_deployment() {
     local namespace=$1
@@ -143,3 +145,5 @@ echo "OpenFaaS UI available at: http://127.0.0.1:8080/ui/"
 echo "Grafana available at: http://localhost:31000"
 echo "Prometheus available at: http://localhost:30000"
 echo "AlertManager available at: http://localhost:32000"
+
+cd ..

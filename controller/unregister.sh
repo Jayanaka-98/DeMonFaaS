@@ -5,6 +5,8 @@ if [ -z "$1" ]; then
     exit 1  # Exit with a non-zero code to indicate an error
 fi
 
+cd controller
+
 # Delete controller deployment
 echo "Deleting controller deployment..."
 kubectl delete -f controller-deployment.yml
@@ -30,3 +32,5 @@ kubectl delete -f api-transformation.yml
 kubectl delete -f api-transformation-definition.yml
 
 echo "Cleanup completed successfully"
+
+cd ..

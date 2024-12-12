@@ -1,3 +1,7 @@
+#!/bin/bash
+
+cd scripts
+
 echo "Starting cleanup..."
 
 if [ -f port_forward.pid ]; then
@@ -36,3 +40,5 @@ echo "Verifying cleanup..."
 echo "Checking namespaces:"
 echo "Checking helm repositories:"
 helm repo list | grep -E 'prometheus-community|stable|openfaas'
+
+cd ..

@@ -1,7 +1,11 @@
+#!/bin/bash
+
 if [ -z "$1" ]; then
     echo "Error: Please include docker username as first arg." >&2
     exit 1  # Exit with a non-zero code to indicate an error
 fi
+
+cd controller
 
 # Registers yaml file with Kubernetes
 kubectl apply -f api-transformation-definition.yml
@@ -25,5 +29,7 @@ docker push $1/demonfaas-controller:latest
 kind load docker-image $1/demonfaas-controller:latest --name demonfaas-cluster
 
 kubectl apply -f controller-deployment.yml
+
+cd ..
 
 # kubectl port-forward $(kubectl get pods | grep demonfaas-controller | awk '{print $1}') 9000:9000
