@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -28,40 +29,33 @@ func d_assert(predicate bool) {
 }
 
 var (
-	dockerFile string
+	projectPath       string
+	dockerhubUsername string
 )
+
+const (
+	resultPath = "benchmark-openfaas"
+)
+
+var splitProjects = [4]string{"benchmark-app", "benchmark-app-compute", "benchmark-app-data", "benchmark-app-quick"}
 
 func init() {
 	d_print("demonfaas init")
 
-	// demonfaasCmd.Flags().IntVarP(&flag1, "flag1", "1", 0, "flag1 test")
-	// demonfaasCmd.Flags().BoolVarP(&flag2, "flag2", "2", false, "flag2 test")
-	// src, dockerfile, deployment.yaml (already delpoyed stuff to k8)
-
-	demonfaasCmd.Flags().StringVar(&dockerFile, "dockerfile", "", "original input dockerfile")
-	// demonfaasCmd.Flags().StringVar(&dockerhubUsername, "username", "", "dockerhub username")
-
-	up, _, _ := faasCmd.Find([]string{"up"})
-	demonfaasCmd.Flags().AddFlagSet(up.Flags())
-	faasCmd.AddCommand(demonfaasCmd)
+	demonfaasCmd.Flags().StringVar(&projectPath, "path", "", "original project path directory")
+	demonfaasCmd.Flags().StringVar(&dockerhubUsername, "username", "", "dockerhub username")
 }
 
 var demonfaasCmd = &cobra.Command{
-	Use:      `demonfaas`, // needs to match file name
-	Short:    `short fill me in`,
-	Long:     `long fill me in`,
-	Example:  `example fill me in`,
+	Use:      `demonfaas`,
 	PreRunE:  preRun,
 	RunE:     run,
 	PostRunE: postRun,
 }
 
-func preRun(cmd *cobra.Command, args []string) error {
-	d_print("pre run demonfass with dockerfile", dockerFile)
-	return nil
-}
+func modifyAndGenerateDockerfile(cmd *cobra.Command, args []string) error {
+	excludeWords := []string{"FROM", "CMD", "EXPOSE", "ARG"}
 
-func generateDockerfile(cmd *cobra.Command, args []string) error {
 	dockerFileTemplate := `
 	ARG PYTHON_VERSION=3.9
 	FROM --platform=${TARGETPLATFORM:-linux/amd64} ghcr.io/openfaas/of-watchdog:0.10.4 AS watchdog
@@ -84,7 +78,9 @@ func generateDockerfile(cmd *cobra.Command, args []string) error {
 	CMD ["fwatchdog"]
 	`
 
-	file, err := os.Open(dockerFile)
+	dockerfile := projectPath + "/Dockerfile.kubernetes"
+
+	file, err := os.Open(dockerfile)
 	if err != nil {
 		return fmt.Errorf("invalid file name")
 	}
@@ -92,23 +88,81 @@ func generateDockerfile(cmd *cobra.Command, args []string) error {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	payload := ""
+	payload := "# demonfaas\n"
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) >= 4 && line[:4] != "FROM" && line[:4] != "CMD " {
+		words := strings.Fields(line)
+		if len(words) == 0 || !slices.Contains(excludeWords, words[0]) {
 			payload += (line + "\n")
+		}
+
+		if len(words) >= 2 && words[1] == "demonfaas" {
+			d_print("Dockerfile has already been configured")
+			return nil
 		}
 	}
 
-	// TODO:
-	// make more proper using string formatting
-	// parse each line up to first word and create a blacklist for kwargs that should not be added
-	new_file := strings.Replace(dockerFileTemplate, "@@@", payload, -1)
+	newFile := strings.Replace(dockerFileTemplate, "@@@", payload, -1)
+
+	for _, splitProject := range splitProjects {
+		splitFile, err := os.Open(resultPath + "/" + splitProject + "/" + "Dockerfile")
+		if err != nil {
+			return fmt.Errorf("invalid file name")
+		}
+		writer := bufio.NewWriter(splitFile)
+
+		_, err = writer.WriteString(newFile)
+		if err != nil {
+			return fmt.Errorf("invalid file name")
+		}
+
+		err = writer.Flush()
+		if err != nil {
+			return fmt.Errorf("Error flushing to file")
+		}
+	}
+
+	return nil
+}
+
+func generateStackYaml(cmd *cobra.Command, args []string) error {
+	stackTemplate := `
+provider:
+ name: openfaas
+ gateway: http://127.0.0.1:8080
+
+functions:
+  benchmark-app:
+    lang: dockerfile
+    handler: ./benchmark-app
+    image: @@@/demonfaas-benchmark-app:latest
+    route:
+  compute:
+    lang: dockerfile
+    handler: ./benchmark-app-compute
+    image: @@@/demonfaas-benchmark-app-compute:latest
+  data:
+    lang: dockerfile
+    handler: ./benchmark-app-data
+    image: @@@/demonfaas-benchmark-app-data:latest
+  quick:
+    lang: dockerfile
+    handler: ./benchmark-app-quick
+    image: @@@/demonfaas-benchmark-app-quick:latest
+`
+	newStack := strings.Replace(stackTemplate, "@@@", dockerhubUsername, -1)
+
+	file, err := os.Open(resultPath + "/" + "stack.yml")
+	if err != nil {
+		return fmt.Errorf("invalid file name")
+	}
+
+	defer file.Close()
 
 	writer := bufio.NewWriter(file)
 
-	_, err = writer.WriteString(new_file)
+	_, err = writer.WriteString(newStack)
 	if err != nil {
 		return fmt.Errorf("invalid file name")
 	}
@@ -121,16 +175,19 @@ func generateDockerfile(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func generateStackYaml(cmd *cobra.Command, args []string) error {
+func preRun(cmd *cobra.Command, args []string) error {
+	d_print("pre run demonfass with dockerfile", projectPath)
+
+	modifyAndGenerateDockerfile(cmd, args)
+	generateStackYaml(cmd, args)
+
 	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {
 	d_print("run")
 
-	generateDockerfile(cmd, args)
-	preRunUp(cmd, args)
-	upHandler(cmd, args)
+	// run the script
 	return nil
 }
 
