@@ -44,6 +44,8 @@ func init() {
 
 	demonfaasCmd.Flags().StringVar(&projectPath, "path", "", "original project path directory")
 	demonfaasCmd.Flags().StringVar(&dockerhubUsername, "username", "", "dockerhub username")
+
+	faasCmd.AddCommand(demonfaasCmd)
 }
 
 var demonfaasCmd = &cobra.Command{
@@ -56,27 +58,25 @@ var demonfaasCmd = &cobra.Command{
 func modifyAndGenerateDockerfile(cmd *cobra.Command, args []string) error {
 	excludeWords := []string{"FROM", "CMD", "EXPOSE", "ARG"}
 
-	dockerFileTemplate := `
-	ARG PYTHON_VERSION=3.9
-	FROM --platform=${TARGETPLATFORM:-linux/amd64} ghcr.io/openfaas/of-watchdog:0.10.4 AS watchdog
-	FROM --platform=${TARGETPLATFORM:-linux/amd64} python:${PYTHON_VERSION}-alpine AS build
-	
-	COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
-	RUN chmod +x /usr/bin/fwatchdog
-	
-	# ---------------
-	@@@
-	# ---------------
-	
-	ENV fprocess="gunicorn app.app:app -b 127.0.0.1:8000"
-	ENV cgi_headers="true"
-	ENV mode="http"
-	ENV upstream_url="http://127.0.0.1:8000"
-	
-	HEALTHCHECK --interval=5s CMD [ -e /tmp/.lock ] || exit 1
-	
-	CMD ["fwatchdog"]
-	`
+	dockerFileTemplate := `ARG PYTHON_VERSION=3.9
+FROM --platform=${TARGETPLATFORM:-linux/amd64} ghcr.io/openfaas/of-watchdog:0.10.4 AS watchdog
+FROM --platform=${TARGETPLATFORM:-linux/amd64} python:${PYTHON_VERSION}-alpine AS build
+
+COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
+RUN chmod +x /usr/bin/fwatchdog
+
+# ---demonfass---
+@@@
+# ---------------
+
+ENV fprocess="gunicorn app.app:app -b 127.0.0.1:8000"
+ENV cgi_headers="true"
+ENV mode="http"
+ENV upstream_url="http://127.0.0.1:8000"
+
+HEALTHCHECK --interval=5s CMD [ -e /tmp/.lock ] || exit 1
+
+CMD ["fwatchdog"]`
 
 	dockerfile := projectPath + "/Dockerfile.kubernetes"
 
@@ -88,7 +88,7 @@ func modifyAndGenerateDockerfile(cmd *cobra.Command, args []string) error {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	payload := "# demonfaas\n"
+	payload := ""
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -96,17 +96,14 @@ func modifyAndGenerateDockerfile(cmd *cobra.Command, args []string) error {
 		if len(words) == 0 || !slices.Contains(excludeWords, words[0]) {
 			payload += (line + "\n")
 		}
-
-		if len(words) >= 2 && words[1] == "demonfaas" {
-			d_print("Dockerfile has already been configured")
-			return nil
-		}
 	}
 
 	newFile := strings.Replace(dockerFileTemplate, "@@@", payload, -1)
 
+	d_print(newFile)
+
 	for _, splitProject := range splitProjects {
-		splitFile, err := os.Open(resultPath + "/" + splitProject + "/" + "Dockerfile")
+		splitFile, err := os.OpenFile(resultPath+"/"+splitProject+"/"+"Dockerfile", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return fmt.Errorf("invalid file name")
 		}
@@ -127,8 +124,7 @@ func modifyAndGenerateDockerfile(cmd *cobra.Command, args []string) error {
 }
 
 func generateStackYaml(cmd *cobra.Command, args []string) error {
-	stackTemplate := `
-provider:
+	stackTemplate := `provider:
  name: openfaas
  gateway: http://127.0.0.1:8080
 
@@ -149,12 +145,13 @@ functions:
   quick:
     lang: dockerfile
     handler: ./benchmark-app-quick
-    image: @@@/demonfaas-benchmark-app-quick:latest
-`
+    image: @@@/demonfaas-benchmark-app-quick:latest`
+
 	newStack := strings.Replace(stackTemplate, "@@@", dockerhubUsername, -1)
 
-	file, err := os.Open(resultPath + "/" + "stack.yml")
+	file, err := os.OpenFile(resultPath+"/"+"stack.yml", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
+		d_print("error opening/creating resultant stack.yaml")
 		return fmt.Errorf("invalid file name")
 	}
 
