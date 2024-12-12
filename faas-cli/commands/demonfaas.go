@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 
@@ -103,10 +104,13 @@ CMD ["fwatchdog"]`
 	d_print(newFile)
 
 	for _, splitProject := range splitProjects {
-		splitFile, err := os.OpenFile(resultPath+"/"+splitProject+"/"+"Dockerfile", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		splitFile, err := os.OpenFile(resultPath+"/"+splitProject+"/"+"Dockerfile", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+
 		if err != nil {
 			return fmt.Errorf("invalid file name")
 		}
+
+		defer splitFile.Close()
 		writer := bufio.NewWriter(splitFile)
 
 		_, err = writer.WriteString(newFile)
@@ -172,11 +176,26 @@ functions:
 	return nil
 }
 
+func runScript(cmd *cobra.Command, args []string) error {
+	execCmd := exec.Command("./scripts/openfaas_deploy.sh")
+	stdout, err := execCmd.Output()
+
+	if err != nil {
+		panic(err)
+	}
+
+	println("script output")
+	println(stdout)
+
+	return nil
+}
+
 func preRun(cmd *cobra.Command, args []string) error {
 	d_print("pre run demonfass with dockerfile", projectPath)
 
-	modifyAndGenerateDockerfile(cmd, args)
-	generateStackYaml(cmd, args)
+	// modifyAndGenerateDockerfile(cmd, args)
+	// generateStackYaml(cmd, args)
+	runScript(cmd, args)
 
 	return nil
 }
