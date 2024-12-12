@@ -5,7 +5,7 @@ metadata:
   labels:
     app: benchmark-app
 spec:
-  replicas: 10
+  replicas: 1
   selector:
     matchLabels:
       app: benchmark-app
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: benchmark-app
-        image: stoneann5490/demonfaas-benchmark-app-kubernetes:latest
+        image: jayanaka98/demonfaas-benchmark-app-kubernetes:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

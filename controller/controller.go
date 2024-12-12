@@ -346,21 +346,22 @@ func (r *ApiTransformationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 }
 
 func RatioCalculator(max_latency float64, latency_threshold float64) float64 {
-	percentage_of_full := max_latency / latency_threshold
+	// percentage_of_full := max_latency / latency_threshold
 	// fmt.Printf("MAX LATENCY: %.4f, LATENCY_THRESHOLD: %.4f, PCT: %.4f\n", max_latency, latency_threshold, percentage_of_full)
-	if percentage_of_full >= 1 {
-		return 0
-	} else if percentage_of_full >= 0.6 {
-		// 60 -> 80
-		// 70 -> 60
-		// 80 -> 40
-		// 90 -> 20
-		// 100 -> 0
-		diff := percentage_of_full - 0.6
-		return 1 - 2*diff
-	} else {
-		return 1
-	}
+	// if percentage_of_full >= 1 {
+	// 	return 0
+	// } else if percentage_of_full >= 0.6 {
+	// 	// 60 -> 80
+	// 	// 70 -> 60
+	// 	// 80 -> 40
+	// 	// 90 -> 20
+	// 	// 100 -> 0
+	// 	diff := percentage_of_full - 0.6
+	// 	return 1 - 2*diff
+	// } else {
+	// 	return 1
+	// }
+	return 1
 }
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
