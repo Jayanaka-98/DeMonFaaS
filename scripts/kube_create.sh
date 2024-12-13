@@ -1,7 +1,13 @@
+#!/bin/bash
 if [ -z "$1" ]; then
     echo "Error: Please include docker username as first arg." >&2
     exit 1  # Exit with a non-zero code to indicate an error
 fi
+cd scripts
+
+kind delete cluster --name demonfaas-cluster
+
+docker system prune
 
 kind create cluster --config cluster-config.yml
 
@@ -13,13 +19,14 @@ kubectl create configmap postgres-init-sql --from-file=init.sql -o yaml > postgr
 
 kubectl create configmap postgres-insert-sql --from-file=insert.sql -o yaml > postgres-insert-sql.yaml
 
-cd ../controller/
-./register_crd.sh $1
-cd ../scripts
+# cd ../controller/
+# ./register_crd.sh $1
+# cd ../scripts
 
 kubectl apply -f postgres-init-sql.yaml
 kubectl apply -f postgres-insert-sql.yaml
 kubectl apply -f deployment.yaml
 # kubectl create namespace openfaas
 
-./openfaas_deploy.sh
+# ./openfaas_deploy.sh
+cd ..
